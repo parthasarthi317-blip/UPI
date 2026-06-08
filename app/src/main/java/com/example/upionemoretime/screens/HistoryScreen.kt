@@ -116,6 +116,20 @@ fun HistoryScreen(
             ) {
                 Text("Read History")
             }
+            Button(
+                onClick = {
+
+                    TransactionHistoryStore.rechargeHistory.clear()
+
+                    TransactionHistoryStore.paymentHistory.clear()
+
+                    ttsManager.speak(
+                        "Transaction history cleared"
+                    )
+                }
+            ) {
+                Text("Clear History")
+            }
 
             Button(
                 onClick = {
@@ -139,6 +153,7 @@ fun HistoryScreen(
 
                             VoiceCommand.ReadHistory -> {
 
+
                                 val latestRecharge =
                                     TransactionHistoryStore.rechargeHistory
                                         .lastOrNull()
@@ -161,12 +176,23 @@ fun HistoryScreen(
                                         )
                                     }
 
+
                                     else -> {
                                         ttsManager.speak(
                                             "No transaction history found"
                                         )
                                     }
                                 }
+                            }
+                            VoiceCommand.ClearHistory -> {
+
+                                TransactionHistoryStore.rechargeHistory.clear()
+
+                                TransactionHistoryStore.paymentHistory.clear()
+
+                                ttsManager.speak(
+                                    "Transaction history cleared"
+                                )
                             }
 
                             else -> {

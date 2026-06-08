@@ -156,6 +156,13 @@ object VoiceCommandParser {
             return VoiceCommand.OpenRecharge
         }
         if (
+            "clear history" in command ||
+            "delete history" in command ||
+            "remove history" in command
+        ) {
+            return VoiceCommand.ClearHistory
+        }
+        if (
             "history" in command ||
             "transaction history" in command ||
             "show history" in command ||
@@ -170,6 +177,7 @@ object VoiceCommandParser {
         ) {
             return VoiceCommand.ReadHistory
         }
+
         if ("setting" in command||
             "settings" in command ||
             "open settings" in command||

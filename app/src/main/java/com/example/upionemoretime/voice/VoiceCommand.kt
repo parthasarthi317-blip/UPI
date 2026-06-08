@@ -10,6 +10,7 @@ sealed class VoiceCommand {
     data object OpenPayment : VoiceCommand()
     data object OpenHistory : VoiceCommand()
     data object ReadHistory : VoiceCommand()
+    data object ClearHistory : VoiceCommand()
 
     data class SendMoney(
         val amount: Int,
