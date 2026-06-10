@@ -28,17 +28,25 @@ class TextToSpeechManager(
         }
     }
 
-    fun speak(
-        text: String
-    ) {
+    fun speak(text: String) {
+
+        android.util.Log.d(
+            "TTS_DEBUG",
+            "initialized = $initialized"
+        )
 
         if (!initialized) return
 
-        tts?.speak(
+        val result = tts?.speak(
             text,
             TextToSpeech.QUEUE_FLUSH,
             null,
-            null
+            "history_test"
+        )
+
+        android.util.Log.d(
+            "TTS_RESULT",
+            "result = $result"
         )
     }
 

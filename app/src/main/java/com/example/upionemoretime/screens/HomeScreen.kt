@@ -362,16 +362,18 @@ fun HomeScreen( navController: NavController) {
                                             "CANCEL_RECHARGE"
                                         is VoiceCommand.SelectRechargePlan ->
                                             "SELECT_RECHARGE_PLAN"
-
-                                        VoiceCommand.OpenHistory ->
-                                            "OPEN_HISTORY"
                                         VoiceCommand.ReadHistory ->
                                             "READ_HISTORY"
+                                        VoiceCommand.OpenHistory ->
+                                            "OPEN_HISTORY"
+
                                         VoiceCommand.ClearHistory ->
                                             "CLEAR_HISTORY"
-
+                                        VoiceCommand.OpenStatistics ->
+                                            "OPEN_STATISTICS"
                                         VoiceCommand.Unknown ->
                                             "UNKNOWN"
+
                                     }
 
                                     voiceState = VoiceState.IDLE

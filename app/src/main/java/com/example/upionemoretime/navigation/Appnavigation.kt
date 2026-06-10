@@ -8,6 +8,7 @@ import com.example.upionemoretime.screens.PaymentScreen
 import com.example.upionemoretime.screens.RechargeScreen
 import com.example.upionemoretime.screens.SettingsScreen
 import com.example.upionemoretime.screens.HistoryScreen
+import com.example.upionemoretime.screens.StatsScreen
 
 @Composable
 fun AppNavigation() {
@@ -78,6 +79,9 @@ fun AppNavigation() {
 
         composable(Routes.SETTINGS) {
             SettingsScreen(navController)
+        }
+        composable(Routes.STATS) {
+            StatsScreen(navController)
         }
     }
 }

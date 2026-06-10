@@ -5,20 +5,16 @@ plugins {
 
 android {
     namespace = "com.example.upionemoretime"
-    compileSdk {
-        version = release(36) {
-            minorApiLevel = 1
-        }
-    }
+
+    compileSdk = 37
 
     defaultConfig {
         applicationId = "com.example.upionemoretime"
         minSdk = 26
-        targetSdk = 36
+        targetSdk = 37
+
         versionCode = 1
         versionName = "1.0"
-
-        testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }
 
     buildTypes {
@@ -42,6 +38,7 @@ android {
 dependencies {
     implementation("androidx.compose.material:material-icons-extended")
     implementation("androidx.navigation:navigation-compose:2.9.8")
+    implementation(libs.androidx.core)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.activity.compose)

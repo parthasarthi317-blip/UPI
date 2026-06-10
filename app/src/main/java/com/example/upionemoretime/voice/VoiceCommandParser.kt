@@ -138,22 +138,18 @@ object VoiceCommandParser {
                 }
             }
         }
-        if (
-            "confirm recharge" in command
-        ) {
-            return VoiceCommand.ConfirmRecharge
-        }
-
-        if (
-            "cancel recharge" in command
-        ) {
-            return VoiceCommand.CancelRecharge
-        }
 
         if ("recharge" in command||"mobile recharge" in command ||
                 "phone recharge" in command ||
                 "recharge my phone" in command) {
             return VoiceCommand.OpenRecharge
+        }
+        if (
+            "statistics" in command ||
+            "stats" in command ||
+            "transaction statistics" in command
+        ) {
+            return VoiceCommand.OpenStatistics
         }
         if (
             "clear history" in command ||
@@ -163,6 +159,13 @@ object VoiceCommandParser {
             return VoiceCommand.ClearHistory
         }
         if (
+            "read history" in command ||
+            "speak history" in command ||
+            "tell my transactions" in command
+        ) {
+            return VoiceCommand.ReadHistory
+        }
+        if (
             "history" in command ||
             "transaction history" in command ||
             "show history" in command ||
@@ -170,13 +173,7 @@ object VoiceCommandParser {
         ) {
             return VoiceCommand.OpenHistory
         }
-        if (
-            "read history" in command ||
-            "speak history" in command ||
-            "tell my transactions" in command
-        ) {
-            return VoiceCommand.ReadHistory
-        }
+
 
         if ("setting" in command||
             "settings" in command ||

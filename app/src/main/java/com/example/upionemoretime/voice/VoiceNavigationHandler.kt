@@ -103,6 +103,18 @@ object VoiceNavigationHandler {
                     launchSingleTop = true
                 }
             }
+            VoiceCommand.OpenStatistics -> {
+
+                ttsManager?.speak(
+                    "Opening stats"
+                )
+
+                navController.navigate(
+                    Routes.STATS
+                ) {
+                    launchSingleTop = true
+                }
+            }
             VoiceCommand.ConfirmPayment -> {
                 // Will be handled inside PaymentScreen
             }

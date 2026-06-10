@@ -34,4 +34,5 @@ sealed class VoiceCommand {
         val amount: Int
     ) : VoiceCommand()
     data object Unknown : VoiceCommand()
+    data object OpenStatistics : VoiceCommand()
 }

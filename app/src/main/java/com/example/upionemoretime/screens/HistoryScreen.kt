@@ -1,9 +1,12 @@
 package com.example.upionemoretime.screens
 
+import android.util.Log
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -11,11 +14,14 @@ import com.example.upionemoretime.voice.TransactionHistoryStore
 import androidx.compose.ui.platform.LocalContext
 import com.example.upionemoretime.voice.TextToSpeechManager
 import androidx.compose.runtime.remember
+import com.example.upionemoretime.navigation.Routes
 import com.example.upionemoretime.ui.components.GlobalVoiceFab
 import com.example.upionemoretime.voice.SpeechRecognitionManager
 import com.example.upionemoretime.voice.VoiceCommand
 import com.example.upionemoretime.voice.VoiceCommandParser
 import com.example.upionemoretime.voice.VoiceNavigationHandler
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.time.delay
 
 @Composable
 fun HistoryScreen(
@@ -28,6 +34,12 @@ fun HistoryScreen(
     }
     val speechManager = remember {
         SpeechRecognitionManager(context)
+    }
+    DisposableEffect(Unit) {
+        onDispose {
+            speechManager.destroy()
+            ttsManager.shutdown()
+        }
     }
 
     Box(
@@ -83,35 +95,15 @@ fun HistoryScreen(
             )
             Button(
                 onClick = {
+                    val rechargeCount =
+                        TransactionHistoryStore.rechargeHistory.size
 
-                    val latestRecharge =
-                        TransactionHistoryStore.rechargeHistory
-                            .lastOrNull()
+                    val paymentCount =
+                        TransactionHistoryStore.paymentHistory.size
 
-                    val latestPayment =
-                        TransactionHistoryStore.paymentHistory
-                            .lastOrNull()
-
-                    when {
-
-                        latestRecharge != null -> {
-                            ttsManager.speak(
-                                "Latest recharge is $latestRecharge"
-                            )
-                        }
-
-                        latestPayment != null -> {
-                            ttsManager.speak(
-                                "Latest payment is $latestPayment"
-                            )
-                        }
-
-                        else -> {
-                            ttsManager.speak(
-                                "No transaction history found"
-                            )
-                        }
-                    }
+                    ttsManager.speak(
+                        "You have $paymentCount payments and $rechargeCount recharges in your transaction history"
+                    )
                 }
             ) {
                 Text("Read History")
@@ -129,6 +121,15 @@ fun HistoryScreen(
                 }
             ) {
                 Text("Clear History")
+            }
+            Button(
+                onClick = {
+                    navController.navigate(
+                        Routes.STATS
+                    )
+                }
+            ) {
+                Text("View Statistics")
             }
 
             Button(
@@ -153,36 +154,16 @@ fun HistoryScreen(
 
                             VoiceCommand.ReadHistory -> {
 
+                                Log.d("HISTORY_TTS", "Read History button clicked")
+                                val rechargeCount =
+                                    TransactionHistoryStore.rechargeHistory.size
 
-                                val latestRecharge =
-                                    TransactionHistoryStore.rechargeHistory
-                                        .lastOrNull()
-
-                                val latestPayment =
-                                    TransactionHistoryStore.paymentHistory
-                                        .lastOrNull()
-
-                                when {
-
-                                    latestRecharge != null -> {
-                                        ttsManager.speak(
-                                            "Latest recharge is $latestRecharge"
-                                        )
-                                    }
-
-                                    latestPayment != null -> {
-                                        ttsManager.speak(
-                                            "Latest payment is $latestPayment"
-                                        )
-                                    }
-
-
-                                    else -> {
-                                        ttsManager.speak(
-                                            "No transaction history found"
-                                        )
-                                    }
-                                }
+                                val paymentCount =
+                                    TransactionHistoryStore.paymentHistory.size
+                                Log.d("HISTORY_TTS", "Speaking summary")
+                                ttsManager.speak(
+                                    "You have $paymentCount payments and $rechargeCount recharges in your transaction history"
+                                )
                             }
                             VoiceCommand.ClearHistory -> {
 

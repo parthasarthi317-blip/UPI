@@ -27,4 +27,5 @@ object Routes {
     const val RECHARGE = "recharge"
 
     const val SETTINGS = "settings"
+    const val STATS = "stats"
 }
