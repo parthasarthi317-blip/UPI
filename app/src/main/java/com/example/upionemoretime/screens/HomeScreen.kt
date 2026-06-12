@@ -32,6 +32,7 @@ import com.example.upionemoretime.voice.VoiceCommand
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import com.example.upionemoretime.voice.BalanceStore
 import com.example.upionemoretime.voice.VoiceNavigationHandler
 import com.example.upionemoretime.voice.TextToSpeechManager
 @Composable
@@ -188,7 +189,7 @@ fun HomeScreen( navController: NavController) {
                     Spacer(modifier = Modifier.height(8.dp))
 
                     Text(
-                        text = "₹12,540",
+                        text = "₹${BalanceStore.balance.value}",
                         color = Color.White,
                         fontSize = 32.sp,
                         fontWeight = FontWeight.Bold

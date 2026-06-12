@@ -5,6 +5,7 @@ import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import com.example.upionemoretime.voice.BalanceStore
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -13,6 +14,7 @@ import com.example.upionemoretime.voice.TransactionHistoryStore
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.getValue
@@ -176,8 +178,26 @@ fun PaymentScreen(
                         onClick = {TransactionHistoryStore.paymentHistory.add(
                             "₹$amount -> $receiver"
                         )
+                            if (BalanceStore.balance.value >= amount) {
 
-                            paymentSuccess = true
+                                BalanceStore.balance.value -= amount
+
+                                TransactionHistoryStore.paymentHistory.add(
+                                    "₹$amount -> $receiver"
+                                )
+
+                                paymentSuccess = true
+
+                            } else {
+
+                                ttsManager.speak(
+                                    "Insufficient balance"
+                                )
+
+                                paymentMessage =
+                                    "Insufficient Balance"
+                            }
+
 
 
                         },
@@ -234,7 +254,8 @@ fun PaymentScreen(
 
                                 (context as android.app.Activity).runOnUiThread {
 
-                                    paymentMessage = "CONFIRM PAYMENT DETECTED"
+                                    paymentMessage =
+                                        "Payment confirmed"
 
                                     ttsManager.speak(
                                         "Payment successful"
@@ -243,8 +264,26 @@ fun PaymentScreen(
                                     TransactionHistoryStore.paymentHistory.add(
                                         "₹$amount -> $receiver"
                                     )
+                                    if (BalanceStore.balance.value >= amount) {
 
-                                    paymentSuccess = true
+                                        BalanceStore.balance.value -= amount
+
+                                        TransactionHistoryStore.paymentHistory.add(
+                                            "₹$amount -> $receiver"
+                                        )
+
+                                        paymentSuccess = true
+
+                                    } else {
+
+                                        ttsManager.speak(
+                                            "Insufficient balance"
+                                        )
+
+                                        paymentMessage =
+                                            "Insufficient Balance"
+                                    }
+
                                 }
                             }
 
@@ -276,6 +315,12 @@ fun PaymentScreen(
                 )
             }
         )
+        DisposableEffect(Unit) {
+            onDispose {
+                speechManager.destroy()
+                ttsManager.shutdown()
+            }
+        }
 
 
     }

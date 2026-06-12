@@ -4,6 +4,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Button
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
@@ -44,6 +45,24 @@ fun StatsScreen(
 
     {
 
+        GlobalVoiceFab(
+            onClick = {
+                speechManager.startListening(
+                    onResult = { result ->
+
+                        val command =
+                            VoiceCommandParser.parse(result)
+
+                        VoiceNavigationHandler.handleCommand(
+                            command = command,
+                            navController = navController,
+                            ttsManager = ttsManager
+                        )
+                    },
+                    onError = {}
+                )
+            }
+        )
         Text("Transaction Statistics")
 
         Spacer(
@@ -72,22 +91,10 @@ fun StatsScreen(
         }
 
     }
-    GlobalVoiceFab(
-        onClick = {
-            speechManager.startListening(
-                onResult = { result ->
-
-                    val command =
-                        VoiceCommandParser.parse(result)
-
-                    VoiceNavigationHandler.handleCommand(
-                        command = command,
-                        navController = navController,
-                        ttsManager = ttsManager
-                    )
-                },
-                onError = {}
-            )
+    DisposableEffect(Unit) {
+        onDispose {
+            speechManager.destroy()
+            ttsManager.shutdown()
         }
-    )
+    }
 }
