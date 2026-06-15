@@ -20,14 +20,12 @@ class VoiceManager(
 
     private var currentState = VoiceState.IDLE
     private var retryCount = 0
-    private val MAX_RETRIES = 3
+    private val MAX_RETRIES = 2 // Reduced to 2 for faster exit on silence
 
     init {
         Log.d("VOICE_MANAGER", "VoiceManager Created: ${hashCode()}")
 
         ttsManager.setOnSpeechDoneListener {
-            // CRITICAL: TTS callbacks are on a background thread. 
-            // We must move to the Main Thread for SpeechRecognizer.
             mainHandler.post {
                 Log.d("VOICE_DEBUG", "TTS Finished. State: $currentState")
 
@@ -43,7 +41,7 @@ class VoiceManager(
                         transitionTo(VoiceState.WAKING)
                     }
                     else -> {
-                        if (currentState != VoiceState.LISTENING && currentState != VoiceState.WAKING) {
+                        if (currentState != VoiceState.LISTENING && currentState != VoiceState.WAKING && currentState != VoiceState.IDLE) {
                             transitionTo(VoiceState.WAKING)
                         }
                     }
@@ -59,6 +57,7 @@ class VoiceManager(
         when (newState) {
             VoiceState.WAKING -> {
                 followUpSessionManager.stopTimeout()
+                speechManager.stopListening() // Ensure command mic is OFF
                 retryCount = 0
                 wakeWordManager.startListening {
                     Log.d("VOICE_DEBUG", "Wake Word Detected!")
@@ -70,6 +69,7 @@ class VoiceManager(
             }
             VoiceState.PROMPTING, VoiceState.RESPONDING, VoiceState.CLOSING -> {
                 wakeWordManager.stopListening()
+                followUpSessionManager.stopTimeout()
             }
             VoiceState.LISTENING -> {
                 wakeWordManager.stopListening()
@@ -77,9 +77,11 @@ class VoiceManager(
                     startListeningForCommand()
                 }, 400)
 
+                // 10 Second Inactivity Timeout
                 followUpSessionManager.startTimeout(timeoutMillis = 10_000) {
-                    Log.d("VOICE_SESSION", "Session timeout.")
-                    transitionTo(VoiceState.WAKING)
+                    Log.d("VOICE_SESSION", "10s Inactivity Timeout. Closing assistant.")
+                    transitionTo(VoiceState.CLOSING)
+                    ttsManager.speak("Goodbye")
                 }
             }
             VoiceState.PROCESSING -> {
@@ -113,25 +115,29 @@ class VoiceManager(
                         ttsManager = ttsManager
                     )
                 } else {
-                    handleUnknownCommand()
+                    handleUnknownCommand(errorType = "UNKNOWN")
                 }
             },
             onError = { error ->
                 Log.d("VOICE_DEBUG", "Speech Error: $error")
-                handleUnknownCommand(isError = true)
+                handleUnknownCommand(errorType = error)
             }
         )
     }
 
-    private fun handleUnknownCommand(isError: Boolean = false) {
+    private fun handleUnknownCommand(errorType: String) {
+        // If the error is a timeout (silence), we handle it more strictly
+        val isSilence = errorType.contains("TIMEOUT", ignoreCase = true) || errorType.contains("NO_MATCH", ignoreCase = true)
+        
         retryCount++
-        if (retryCount >= MAX_RETRIES) {
-            Log.d("VOICE_DEBUG", "Max retries reached.")
+        
+        if (retryCount >= MAX_RETRIES || (isSilence && retryCount >= 1)) {
+            Log.d("VOICE_DEBUG", "Exit condition met. Returning to Wake Word.")
             transitionTo(VoiceState.CLOSING)
-            ttsManager.speak("I'm having trouble understanding. Let's try again later.")
+            ttsManager.speak("I'll stop listening now. Say 'Hey Assistant' if you need anything.")
         } else {
             transitionTo(VoiceState.PROMPTING)
-            val message = if (isError) "Sorry, I didn't hear that." else "I didn't catch that. Could you repeat?"
+            val message = if (isSilence) "I didn't hear anything. Could you repeat?" else "I didn't catch that. Could you repeat?"
             ttsManager.speak(message)
         }
     }
@@ -141,7 +147,9 @@ class VoiceManager(
     }
 
     fun startWakeWordDetection() {
-        transitionTo(VoiceState.WAKING)
+        if (currentState == VoiceState.IDLE || currentState == VoiceState.WAKING) {
+            transitionTo(VoiceState.WAKING)
+        }
     }
 
     fun listenAndHandle(navController: NavController) {
