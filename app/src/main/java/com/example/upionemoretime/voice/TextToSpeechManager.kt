@@ -3,6 +3,7 @@ package com.example.upionemoretime.voice
 import android.content.Context
 import android.speech.tts.TextToSpeech
 import java.util.Locale
+import android.speech.tts.UtteranceProgressListener
 
 class TextToSpeechManager(
     context: Context
@@ -17,7 +18,12 @@ class TextToSpeechManager(
             this
         )
     }
-
+    private var onSpeechDone: (() -> Unit)? = null
+    fun setOnSpeechDoneListener(
+        listener: () -> Unit
+    ) {
+        onSpeechDone = listener
+    }
     override fun onInit(status: Int) {
 
         if (status == TextToSpeech.SUCCESS) {
@@ -25,6 +31,23 @@ class TextToSpeechManager(
             tts?.language = Locale.US
 
             initialized = true
+            tts?.setOnUtteranceProgressListener(
+                object : UtteranceProgressListener() {
+
+                    override fun onStart(utteranceId: String?) {}
+
+                    override fun onDone(utteranceId: String?) {
+                        android.util.Log.d(
+                            "TTS_DEBUG",
+                            "onDone = $utteranceId"
+                        )
+                        onSpeechDone?.invoke()
+                    }
+
+                    @Deprecated("Deprecated in Java")
+                    override fun onError(utteranceId: String?) {}
+                }
+            )
         }
     }
 
@@ -37,11 +60,14 @@ class TextToSpeechManager(
 
         if (!initialized) return
 
+        val utteranceId =
+            System.currentTimeMillis().toString()
+
         val result = tts?.speak(
             text,
             TextToSpeech.QUEUE_FLUSH,
             null,
-            "history_test"
+            utteranceId
         )
 
         android.util.Log.d(

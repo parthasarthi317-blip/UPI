@@ -10,8 +10,7 @@ import com.example.upionemoretime.voice.VoiceState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import com.example.upionemoretime.voice.VoiceCommandParser
-import android.util.Log
+
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -28,41 +27,30 @@ import com.example.upionemoretime.voice.SpeechRecognitionManager
 import androidx.compose.runtime.DisposableEffect
 import androidx.navigation.NavController
 import com.example.upionemoretime.navigation.Routes
-import com.example.upionemoretime.voice.VoiceCommand
+
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import com.example.upionemoretime.voice.BalanceStore
-import com.example.upionemoretime.voice.VoiceNavigationHandler
-import com.example.upionemoretime.voice.TextToSpeechManager
+
+import com.example.upionemoretime.voice.VoiceManager
+import com.example.upionemoretime.voice.WakeWordManager
+
 @Composable
-fun HomeScreen( navController: NavController) {
+fun HomeScreen(navController: NavController, voiceManager: VoiceManager) {
     var detectedCommand by remember {
         mutableStateOf("No command detected")
     }
     val context = LocalContext.current
-    val ttsManager = remember {
-        TextToSpeechManager(context)
-    }
-    val speechManager = remember {
-        SpeechRecognitionManager(context)
-    }
-    DisposableEffect(Unit) {
 
-        onDispose {
-            speechManager.destroy()
-        }
-    }
     var recognizedText by remember {
-
         mutableStateOf(
             "No voice command yet"
         )
     }
     var voiceState by remember {
-
         mutableStateOf(
-            VoiceState.IDLE
+            VoiceState.WAKE_WORD_LISTENING
         )
     }
     val permissionLauncher =
@@ -277,6 +265,12 @@ fun HomeScreen( navController: NavController) {
                 Text(
                     text = when (voiceState) {
 
+                        VoiceState.WAKE_WORD_LISTENING ->
+                            "Waiting for 'Hey Assistant'"
+
+                        VoiceState.FOLLOW_UP_LISTENING ->
+                            "Listening for follow-up command..."
+
                         VoiceState.IDLE ->
                             "Tap to Speak"
 
@@ -303,122 +297,8 @@ fun HomeScreen( navController: NavController) {
 
                             voiceState = VoiceState.LISTENING
 
-                            speechManager.startListening(
-
-                                onResult = { result ->
-
-                                    recognizedText = result
-
-                                    val command =
-                                        VoiceCommandParser.parse(result)
-
-                                    VoiceNavigationHandler.handleCommand(
-                                        command = command,
-                                        navController = navController,
-                                        ttsManager = ttsManager
-                                    )
-
-                                    detectedCommand = when (command) {
-
-                                        VoiceCommand.CheckBalance ->
-                                            "CHECK_BALANCE"
-
-                                        VoiceCommand.OpenRecharge ->
-                                            "OPEN_RECHARGE"
-
-                                        VoiceCommand.OpenSettings ->
-                                            "OPEN_SETTINGS"
-
-                                        VoiceCommand.GoBack ->
-                                            "GO_BACK"
-
-                                        VoiceCommand.GoHome ->
-                                            "GO_HOME"
-
-                                        VoiceCommand.OpenPayment ->
-                                            "OPEN_PAYMENT"
-
-                                        is VoiceCommand.SendMoney ->
-                                            "SEND ₹${command.amount} TO ${command.receiver}"
-
-                                        VoiceCommand.ConfirmPayment ->
-                                            "CONFIRM_PAYMENT"
-
-                                        VoiceCommand.CancelPayment ->
-                                            "CANCEL_PAYMENT"
-
-                                        VoiceCommand.PaymentDetails ->
-                                            "PAYMENT_DETAILS"
-
-                                        VoiceCommand.RepeatDetails ->
-                                            "REPEAT_DETAILS"
-
-                                        VoiceCommand.ClearDetails ->
-                                            "CLEAR_DETAILS"
-                                        is VoiceCommand.RechargeMobile ->
-                                            "RECHARGE_MOBILE"
-                                        VoiceCommand.ConfirmRecharge ->
-                                            "CONFIRM_RECHARGE"
-                                        VoiceCommand.CancelRecharge ->
-                                            "CANCEL_RECHARGE"
-                                        is VoiceCommand.SelectRechargePlan ->
-                                            "SELECT_RECHARGE_PLAN"
-                                        VoiceCommand.ReadHistory ->
-                                            "READ_HISTORY"
-                                        VoiceCommand.OpenHistory ->
-                                            "OPEN_HISTORY"
-
-                                        VoiceCommand.ClearHistory ->
-                                            "CLEAR_HISTORY"
-                                        VoiceCommand.OpenStatistics ->
-                                            "OPEN_STATISTICS"
-                                        VoiceCommand.Unknown ->
-                                            "UNKNOWN"
-
-                                    }
-
-                                    voiceState = VoiceState.IDLE
-                                    if (command == VoiceCommand.Unknown) {
-
-                                        recognizedText = "Command not recognized"
-
-                                        ttsManager.speak(
-                                            "I don't understand that command yet"
-                                        )
-                                    }
-                                },
-
-
-
-                                onError = { error ->
-
-                                    recognizedText = error
-
-                                    val message = when {
-
-                                        error.contains(
-                                            "NO_MATCH",
-                                            ignoreCase = true
-                                        ) -> {
-                                            "I didn't hear anything. Please try again."
-                                        }
-
-                                        error.contains(
-                                            "NETWORK",
-                                            ignoreCase = true
-                                        ) -> {
-                                            "Please check your internet connection"
-                                        }
-
-                                        else -> {
-                                            "Sorry, something went wrong"
-                                        }
-                                    }
-
-                                    ttsManager.speak(message)
-
-                                    voiceState = VoiceState.IDLE
-                                }
+                            voiceManager.listenAndHandle(
+                                navController = navController
                             )
 
                         } else {

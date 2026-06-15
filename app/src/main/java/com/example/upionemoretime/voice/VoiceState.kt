@@ -4,7 +4,11 @@ enum class VoiceState {
 
     IDLE,
 
+    WAKE_WORD_LISTENING,
+
     LISTENING,
 
-    PROCESSING
+    PROCESSING,
+
+    FOLLOW_UP_LISTENING
 }

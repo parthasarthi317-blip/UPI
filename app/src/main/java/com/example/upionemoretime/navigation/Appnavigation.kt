@@ -1,6 +1,7 @@
 package com.example.upionemoretime.navigation
 
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.navigation.compose.*
 import com.example.upionemoretime.screens.BalanceScreen
 import com.example.upionemoretime.screens.HomeScreen
@@ -9,11 +10,16 @@ import com.example.upionemoretime.screens.RechargeScreen
 import com.example.upionemoretime.screens.SettingsScreen
 import com.example.upionemoretime.screens.HistoryScreen
 import com.example.upionemoretime.screens.StatsScreen
+import com.example.upionemoretime.voice.VoiceManager
 
 @Composable
-fun AppNavigation() {
+fun AppNavigation(voiceManager: VoiceManager) {
 
     val navController = rememberNavController()
+
+    LaunchedEffect(navController) {
+        voiceManager.updateNavController(navController)
+    }
 
     NavHost(
         navController = navController,
@@ -24,7 +30,10 @@ fun AppNavigation() {
         }
 
         composable(Routes.HOME) {
-            HomeScreen(navController)
+            HomeScreen(
+                navController = navController,
+                voiceManager = voiceManager
+            )
         }
 
         composable(

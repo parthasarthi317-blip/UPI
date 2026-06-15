@@ -20,7 +20,11 @@ object VoiceCommandParser {
         text: String
     ): VoiceCommand {
 
-        val command = text.lowercase()
+        val command = text
+            .lowercase()
+            .replace("hey assistant", "")
+            .replace("ok assistant", "")
+            .trim()
         if (
             "go back" in command ||
             "back" in command||"previous screen" in command ||

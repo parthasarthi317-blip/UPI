@@ -30,6 +30,10 @@ fun VoiceAssistantFab(
         VoiceState.LISTENING -> Color(0xFF3B82F6)
 
         VoiceState.PROCESSING -> Color(0xFFF59E0B)
+
+        VoiceState.WAKE_WORD_LISTENING -> Color(0xFF8B5CF6)
+
+        VoiceState.FOLLOW_UP_LISTENING -> Color(0xFF06B6D4)
     }
 
     IconButton(
@@ -52,6 +56,12 @@ fun VoiceAssistantFab(
                     Icons.Default.SettingsVoice
 
                 VoiceState.PROCESSING ->
+                    Icons.Default.SettingsVoice
+
+                VoiceState.WAKE_WORD_LISTENING ->
+                    Icons.Default.SettingsVoice
+
+                VoiceState.FOLLOW_UP_LISTENING ->
                     Icons.Default.SettingsVoice
             },
             contentDescription = null,
