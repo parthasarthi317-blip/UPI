@@ -44,13 +44,13 @@ fun HomeScreen(navController: NavController, voiceManager: VoiceManager) {
     val context = LocalContext.current
 
     var recognizedText by remember {
-        mutableStateOf(
+        mutableStateOf<String>(
             "No voice command yet"
         )
     }
     var voiceState by remember {
-        mutableStateOf(
-            VoiceState.WAKE_WORD_LISTENING
+        mutableStateOf<VoiceState>(
+            VoiceState.WAKING
         )
     }
     val permissionLauncher =
@@ -264,21 +264,26 @@ fun HomeScreen(navController: NavController, voiceManager: VoiceManager) {
 
                 Text(
                     text = when (voiceState) {
-
-                        VoiceState.WAKE_WORD_LISTENING ->
+                        VoiceState.WAKING ->
                             "Waiting for 'Hey Assistant'"
-
-                        VoiceState.FOLLOW_UP_LISTENING ->
-                            "Listening for follow-up command..."
-
-                        VoiceState.IDLE ->
-                            "Tap to Speak"
 
                         VoiceState.LISTENING ->
                             "Listening..."
 
+                        VoiceState.IDLE ->
+                            "Tap to Speak"
+
                         VoiceState.PROCESSING ->
                             "Processing..."
+
+                        VoiceState.PROMPTING ->
+                            "Thinking..."
+
+                        VoiceState.RESPONDING ->
+                            "Answering..."
+
+                        VoiceState.CLOSING ->
+                            "Goodbye"
                     },
                     color = Color.White
                 )

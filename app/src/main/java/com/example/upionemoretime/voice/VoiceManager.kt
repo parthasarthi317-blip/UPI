@@ -10,93 +10,130 @@ class VoiceManager(
     private val context: Context
 ) {
 
-    private val speechManager =
-        SpeechRecognitionManager(context)
-
-    private val ttsManager =
-        TextToSpeechManager(context)
-
-    private val wakeWordManager =
-        WakeWordManager(speechManager)
-
-    private val followUpSessionManager =
-        FollowUpSessionManager()
+    private val speechManager = SpeechRecognitionManager(context)
+    private val ttsManager = TextToSpeechManager(context)
+    private val wakeWordManager = WakeWordManager(speechManager)
+    private val followUpSessionManager = FollowUpSessionManager()
 
     private var currentNavController: NavController? = null
-
-    private var followUpEnabled = false
-    private var isWaitingForCommand = false
-
     private val mainHandler = Handler(Looper.getMainLooper())
+
+    private var currentState = VoiceState.IDLE
+    private var retryCount = 0
+    private val MAX_RETRIES = 3
 
     init {
         Log.d("VOICE_MANAGER", "VoiceManager Created: ${hashCode()}")
-        
-        ttsManager.setOnSpeechDoneListener {
-            Log.d("VOICE_DEBUG", "TTS Finished. followUpEnabled=$followUpEnabled, isWaitingForCommand=$isWaitingForCommand")
 
-            if (isWaitingForCommand) {
-                isWaitingForCommand = false
-                // Small delay to ensure mic is released by any system process and TTS
+        ttsManager.setOnSpeechDoneListener {
+            // CRITICAL: TTS callbacks are on a background thread. 
+            // We must move to the Main Thread for SpeechRecognizer.
+            mainHandler.post {
+                Log.d("VOICE_DEBUG", "TTS Finished. State: $currentState")
+
+                when (currentState) {
+                    VoiceState.PROMPTING -> {
+                        transitionTo(VoiceState.LISTENING)
+                    }
+                    VoiceState.RESPONDING -> {
+                        retryCount = 0 
+                        transitionTo(VoiceState.LISTENING)
+                    }
+                    VoiceState.CLOSING -> {
+                        transitionTo(VoiceState.WAKING)
+                    }
+                    else -> {
+                        if (currentState != VoiceState.LISTENING && currentState != VoiceState.WAKING) {
+                            transitionTo(VoiceState.WAKING)
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    private fun transitionTo(newState: VoiceState) {
+        Log.d("VOICE_DEBUG", "Transitioning: $currentState -> $newState")
+        currentState = newState
+
+        when (newState) {
+            VoiceState.WAKING -> {
+                followUpSessionManager.stopTimeout()
+                retryCount = 0
+                wakeWordManager.startListening {
+                    Log.d("VOICE_DEBUG", "Wake Word Detected!")
+                    mainHandler.post {
+                        transitionTo(VoiceState.PROMPTING)
+                        ttsManager.speak("How can I help you?")
+                    }
+                }
+            }
+            VoiceState.PROMPTING, VoiceState.RESPONDING, VoiceState.CLOSING -> {
+                wakeWordManager.stopListening()
+            }
+            VoiceState.LISTENING -> {
+                wakeWordManager.stopListening()
                 mainHandler.postDelayed({
                     startListeningForCommand()
-                }, 300)
-                return@setOnSpeechDoneListener
+                }, 400)
+
+                followUpSessionManager.startTimeout(timeoutMillis = 10_000) {
+                    Log.d("VOICE_SESSION", "Session timeout.")
+                    transitionTo(VoiceState.WAKING)
+                }
             }
-
-            if (!followUpEnabled) {
-                Log.d("VOICE_DEBUG", "Restarting Wake Word")
-                startWakeWordDetection()
-                return@setOnSpeechDoneListener
+            VoiceState.PROCESSING -> {
+                followUpSessionManager.stopTimeout()
             }
-
-            followUpEnabled = false
-            Log.d("VOICE_DEBUG", "Starting Follow Up Listening")
-            
-            mainHandler.postDelayed({
-                startListeningForCommand()
-            }, 300)
-
-            followUpSessionManager.startTimeout(timeoutMillis = 10_000) {
-                Log.d("VOICE_SESSION", "Follow-up timeout expired")
-                startWakeWordDetection()
+            VoiceState.IDLE -> {
+                wakeWordManager.stopListening()
+                speechManager.stopListening()
+                followUpSessionManager.stopTimeout()
             }
         }
     }
 
     private fun startListeningForCommand() {
-        val nav = currentNavController ?: return
-        
+        val nav = currentNavController ?: run {
+            transitionTo(VoiceState.WAKING)
+            return
+        }
+
         speechManager.startListening(
             onResult = { result ->
-                Log.d("VOICE_DEBUG", "Result = $result")
-                followUpSessionManager.stopTimeout()
+                Log.d("VOICE_DEBUG", "Speech Result: $result")
+                currentState = VoiceState.PROCESSING
 
                 val command = VoiceCommandParser.parse(result)
                 if (command != VoiceCommand.Unknown) {
-                    followUpEnabled = true
+                    transitionTo(VoiceState.RESPONDING)
                     VoiceNavigationHandler.handleCommand(
                         command = command,
                         navController = nav,
                         ttsManager = ttsManager
                     )
                 } else {
-                    ttsManager.speak("I didn't catch that. Try again or say 'Hey Assistant' later.")
-                    followUpEnabled = false
+                    handleUnknownCommand()
                 }
             },
             onError = { error ->
-                Log.d("VOICE_DEBUG", "Error = $error")
-                if (followUpEnabled) {
-                    // If we were in follow-up, just go back to wake word on error
-                    followUpEnabled = false
-                    startWakeWordDetection()
-                } else {
-                    // If it was the first command, maybe notify user
-                    ttsManager.speak("Sorry, I had trouble hearing you.")
-                }
+                Log.d("VOICE_DEBUG", "Speech Error: $error")
+                handleUnknownCommand(isError = true)
             }
         )
+    }
+
+    private fun handleUnknownCommand(isError: Boolean = false) {
+        retryCount++
+        if (retryCount >= MAX_RETRIES) {
+            Log.d("VOICE_DEBUG", "Max retries reached.")
+            transitionTo(VoiceState.CLOSING)
+            ttsManager.speak("I'm having trouble understanding. Let's try again later.")
+        } else {
+            transitionTo(VoiceState.PROMPTING)
+            val message = if (isError) "Sorry, I didn't hear that." else "I didn't catch that. Could you repeat?"
+            ttsManager.speak(message)
+        }
     }
 
     fun updateNavController(navController: NavController) {
@@ -104,23 +141,12 @@ class VoiceManager(
     }
 
     fun startWakeWordDetection() {
-        Log.d("VOICE_DEBUG", "Starting Wake Word Detection")
-        followUpEnabled = false
-        isWaitingForCommand = false
-        wakeWordManager.startListening {
-            Log.d("VOICE_DEBUG", "Wake Word Detected!")
-            mainHandler.post {
-                wakeWordManager.stopListening()
-                isWaitingForCommand = true
-                ttsManager.speak("How can I help you?")
-            }
-        }
+        transitionTo(VoiceState.WAKING)
     }
 
     fun listenAndHandle(navController: NavController) {
         this.currentNavController = navController
-        wakeWordManager.stopListening()
-        isWaitingForCommand = true
+        transitionTo(VoiceState.PROMPTING)
         ttsManager.speak("Listening")
     }
 
@@ -130,9 +156,8 @@ class VoiceManager(
 
     fun destroy() {
         Log.d("VOICE_MANAGER", "VoiceManager Destroyed")
-        followUpSessionManager.stopTimeout()
-        wakeWordManager.stopListening()
-        speechManager.destroy()
+        transitionTo(VoiceState.IDLE)
         ttsManager.shutdown()
+        speechManager.destroy()
     }
 }

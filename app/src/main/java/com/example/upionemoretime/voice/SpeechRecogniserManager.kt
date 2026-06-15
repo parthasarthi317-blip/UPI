@@ -63,7 +63,7 @@ class SpeechRecognitionManager(
             }
 
             override fun onReadyForSpeech(params: Bundle?) {
-                Log.d("SPEECH_MANAGER", "Ready for speech")
+                Log.d("SPEECH_MANAGER", "READY_FOR_SPEECH: Microphone is now OPEN")
             }
             override fun onRmsChanged(rmsdB: Float) {}
             override fun onBeginningOfSpeech() {}
