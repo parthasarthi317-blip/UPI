@@ -1,327 +1,184 @@
 package com.example.upionemoretime.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import com.example.upionemoretime.voice.BalanceStore
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.example.upionemoretime.voice.TransactionHistoryStore
 import androidx.compose.ui.unit.sp
-import androidx.compose.material3.Button
-import androidx.compose.material3.ButtonDefaults
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
 import androidx.navigation.NavController
 import com.example.upionemoretime.navigation.Routes
-import com.example.upionemoretime.ui.components.GlobalVoiceFab
-import androidx.compose.ui.platform.LocalContext
-import com.example.upionemoretime.voice.VoiceLauncher
-import com.example.upionemoretime.voice.VoiceCommand
-import com.example.upionemoretime.voice.VoiceCommandParser
-import com.example.upionemoretime.voice.SpeechRecognitionManager
-import com.example.upionemoretime.voice.VoiceNavigationHandler
-import com.example.upionemoretime.voice.TextToSpeechManager
+import com.example.upionemoretime.ui.components.PremiumCard
+import com.example.upionemoretime.ui.theme.*
+import com.example.upionemoretime.voice.*
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun PaymentScreen(
     amount: Int,
     receiver: String,
     navController: NavController
-
 ) {
     val context = LocalContext.current
-    val ttsManager = remember {
-        TextToSpeechManager(context)
-    }
-    val speechManager = remember {
-        SpeechRecognitionManager(context)
-    }
-    var paymentSuccess by remember {
-        mutableStateOf(false)
-    }
-    var paymentMessage by remember {
-        mutableStateOf("")
-    }
+    val ttsManager = remember { TextToSpeechManager(context) }
+    val speechManager = remember { SpeechRecognitionManager(context) }
+    
+    var paymentSuccess by remember { mutableStateOf(false) }
+    var paymentMessage by remember { mutableStateOf("") }
 
-
-    if (paymentSuccess) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-
-            Text(
-                text = "✅ Payment Successful",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Text(
-                text = "₹$amount sent to $receiver"
-            )
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
-
-            Button(
-                onClick = {
-                    navController.navigate(
-                        Routes.HOME
-                    ) {
-                        popUpTo(0)
-                    }
-                }
-            ) {
-                Text(
-                    text = "Back To Home"
-                )
-            }
-
+    DisposableEffect(Unit) {
+        onDispose {
+            speechManager.destroy()
+            ttsManager.shutdown()
         }
-
-
-        return
     }
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
 
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
-
-            Text(
-                text = "Confirm Payment",
-                fontSize = 28.sp,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
-
-            Card(
-
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF1E293B)
-
-                )
-            ) {
-                if (paymentMessage.isNotBlank()) {
-
-                Text(
-                    text = paymentMessage,
-                    color = Color.Cyan
-                )
-
-                Spacer(
-                    modifier = Modifier.height(12.dp)
-                )
-            }
-
-                Column(
-                    modifier = Modifier.padding(20.dp)
-                ) {
-
-                    Text(
-                        text = "Ready to send ₹$amount to $receiver",
-                        color = Color(0xFF22C55E),
-                        fontWeight = FontWeight.Bold,
-                        fontSize = 18.sp
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(16.dp)
-                    )
-
-                    Text(
-                        text = receiver,
-                        fontSize = 22.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-
-                    Spacer(
-                        modifier = Modifier.height(16.dp)
-                    )
-
-                    Text(
-                        text = "Amount",
-                        color = Color.Gray
-                    )
-
-                    Text(
-                        text = "₹$amount",
-                        fontSize = 28.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                    Spacer(
-                        modifier = Modifier.height(24.dp)
-                    )
-
-                    Button(
-                        onClick = {TransactionHistoryStore.paymentHistory.add(
-                            "₹$amount -> $receiver"
-                        )
-                            if (BalanceStore.balance.value >= amount) {
-
-                                BalanceStore.balance.value -= amount
-
-                                TransactionHistoryStore.paymentHistory.add(
-                                    "₹$amount -> $receiver"
-                                )
-
-                                paymentSuccess = true
-
-                            } else {
-
-                                ttsManager.speak(
-                                    "Insufficient balance"
-                                )
-
-                                paymentMessage =
-                                    "Insufficient Balance"
-                            }
-
-
-
-                        },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF22C55E)
-                        ),
-                        modifier = Modifier.fillMaxWidth()
-                    ) {
-
-                        Text(
-                            text = "Confirm Payment"
-                        )
+    Scaffold(
+        containerColor = Obsidian,
+        topBar = {
+            TopAppBar(
+                title = { Text("Confirm Payment", style = MaterialTheme.typography.titleLarge) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = TextPrimary)
                     }
-
-                }
-
-            }
-
-
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+            )
         }
-        GlobalVoiceFab(
-            onClick = {
-
-                speechManager.startListening(
-
-                    onResult = { result ->
-
-                        val command =
-                            VoiceCommandParser.parse(result)
-
-                        when (command) {
-                            VoiceCommand.ClearDetails -> {
-
-                                paymentMessage = ""
-                            }
-                            VoiceCommand.RepeatDetails -> {
-
-                                paymentMessage =
-                                    "Sending ₹$amount to $receiver"
-                                ttsManager.speak(
-                                    "Sending $amount rupees to $receiver"
-                                )
-                            }
-                            VoiceCommand.PaymentDetails -> {
-
-                                paymentMessage =
-                                    "Sending ₹$amount to $receiver"
-                                ttsManager.speak(
-                                    "Sending $amount rupees to $receiver"
-                                )
-                            }
-
-                            VoiceCommand.ConfirmPayment -> {
-
-                                (context as android.app.Activity).runOnUiThread {
-
-                                    paymentMessage =
-                                        "Payment confirmed"
-
-                                    ttsManager.speak(
-                                        "Payment successful"
-                                    )
-
-                                    TransactionHistoryStore.paymentHistory.add(
-                                        "₹$amount -> $receiver"
-                                    )
-                                    if (BalanceStore.balance.value >= amount) {
-
-                                        BalanceStore.balance.value -= amount
-
-                                        TransactionHistoryStore.paymentHistory.add(
-                                            "₹$amount -> $receiver"
-                                        )
-
-                                        paymentSuccess = true
-
-                                    } else {
-
-                                        ttsManager.speak(
-                                            "Insufficient balance"
-                                        )
-
-                                        paymentMessage =
-                                            "Insufficient Balance"
-                                    }
-
-                                }
-                            }
-
-                            VoiceCommand.CancelPayment -> {
-                                ttsManager.speak(
-                                    "Payment cancelled"
-                                )
-
-                                navController.navigate(
-                                    Routes.HOME
-                                ) {
-                                    popUpTo(Routes.HOME)
-                                }
-                            }
-
-                            else -> {
-
-                                VoiceNavigationHandler.handleCommand(
-                                    command = command,
-                                    navController = navController
-                                )
-                            }
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (paymentSuccess) {
+                PaymentSuccessState(amount, receiver) {
+                    navController.navigate(Routes.HOME) { popUpTo(0) }
+                }
+            } else {
+                PaymentConfirmationState(
+                    amount = amount,
+                    receiver = receiver,
+                    paymentMessage = paymentMessage,
+                    onConfirm = {
+                        if (BalanceStore.balance.value >= amount) {
+                            BalanceStore.balance.value -= amount
+                            TransactionHistoryStore.paymentHistory.add("₹$amount -> $receiver")
+                            paymentSuccess = true
+                        } else {
+                            ttsManager.speak("Insufficient balance")
+                            paymentMessage = "Insufficient Balance"
                         }
-                    },
-
-                    onError = {
-
                     }
                 )
             }
+        }
+    }
+}
+
+@Composable
+fun PaymentSuccessState(amount: Int, receiver: String, onHomeClick: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(
+            Icons.Default.CheckCircle,
+            contentDescription = null,
+            tint = SecondaryEmerald,
+            modifier = Modifier.size(100.dp)
         )
-        DisposableEffect(Unit) {
-            onDispose {
-                speechManager.destroy()
-                ttsManager.shutdown()
-            }
+        Spacer(modifier = Modifier.height(32.dp))
+        Text(
+            text = "Payment Successful",
+            style = MaterialTheme.typography.headlineMedium,
+            color = TextPrimary
+        )
+        Spacer(modifier = Modifier.height(8.dp))
+        Text(
+            text = "₹$amount sent to $receiver",
+            style = MaterialTheme.typography.bodyLarge,
+            color = TextSecondary
+        )
+        Spacer(modifier = Modifier.height(48.dp))
+        Button(
+            onClick = onHomeClick,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+        ) {
+            Text("Back To Home", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun PaymentConfirmationState(
+    amount: Int,
+    receiver: String,
+    paymentMessage: String,
+    onConfirm: () -> Unit
+) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp)
+    ) {
+        PremiumCard {
+            Text(
+                text = "PAYING TO",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondary
+            )
+            Text(
+                text = receiver,
+                style = MaterialTheme.typography.headlineMedium,
+                color = TextPrimary
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+            Divider(color = Color.White.copy(alpha = 0.1f))
+            Spacer(modifier = Modifier.height(24.dp))
+            
+            Text(
+                text = "AMOUNT",
+                style = MaterialTheme.typography.labelSmall,
+                color = TextSecondary
+            )
+            Text(
+                text = "₹$amount",
+                style = MaterialTheme.typography.headlineLarge,
+                color = PrimaryIndigo,
+                fontWeight = FontWeight.ExtraBold
+            )
         }
 
+        if (paymentMessage.isNotBlank()) {
+            Spacer(modifier = Modifier.height(16.dp))
+            Text(
+                text = paymentMessage,
+                color = ErrorRose,
+                style = MaterialTheme.typography.bodyMedium,
+                modifier = Modifier.align(Alignment.CenterHorizontally)
+            )
+        }
 
+        Spacer(modifier = Modifier.weight(1f))
+
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = SecondaryEmerald)
+        ) {
+            Text("Confirm Payment", fontWeight = FontWeight.Bold)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
     }
 }

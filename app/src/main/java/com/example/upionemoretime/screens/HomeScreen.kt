@@ -1,366 +1,218 @@
 package com.example.upionemoretime.screens
 
-import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
-import androidx.compose.runtime.*
-import com.example.upionemoretime.voice.VoiceState
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-
-import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Brush
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
-import com.example.upionemoretime.ui.components.VoiceAssistantFab
 import android.Manifest
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.compose.ui.platform.LocalContext
-import com.example.upionemoretime.voice.PermissionManager
-import com.example.upionemoretime.voice.SpeechRecognitionManager
-import androidx.compose.runtime.DisposableEffect
-import androidx.navigation.NavController
-import com.example.upionemoretime.navigation.Routes
-
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.navigation.NavController
+import com.example.upionemoretime.navigation.Routes
+import com.example.upionemoretime.ui.components.*
+import com.example.upionemoretime.ui.theme.*
 import com.example.upionemoretime.voice.BalanceStore
-
+import com.example.upionemoretime.voice.PermissionManager
 import com.example.upionemoretime.voice.VoiceManager
-import com.example.upionemoretime.voice.WakeWordManager
+import com.example.upionemoretime.voice.VoiceState
 
 @Composable
 fun HomeScreen(navController: NavController, voiceManager: VoiceManager) {
-    var detectedCommand by remember {
-        mutableStateOf("No command detected")
-    }
     val context = LocalContext.current
-
-    var recognizedText by remember {
-        mutableStateOf<String>(
-            "No voice command yet"
-        )
-    }
-    var voiceState by remember {
-        mutableStateOf<VoiceState>(
-            VoiceState.WAKING
-        )
-    }
-    val permissionLauncher =
-        rememberLauncherForActivityResult(
-            contract =
-                ActivityResultContracts.RequestPermission()
-        ) { granted ->
-
-            if (granted) {
-
-                voiceState = VoiceState.LISTENING
-
-            }
+    val scrollState = rememberScrollState()
+    
+    var voiceState by remember { mutableStateOf<VoiceState>(VoiceState.WAKING) }
+    
+    val permissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            voiceState = VoiceState.LISTENING
         }
+    }
 
-
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF0F172A),
-                        Color(0xFF1E293B)
-                    )
-                )
+    Scaffold(
+        containerColor = Obsidian,
+        bottomBar = {
+            VoiceAssistantSection(
+                voiceState = voiceState,
+                onClick = {
+                    if (PermissionManager.hasAudioPermission(context)) {
+                        voiceState = VoiceState.LISTENING
+                        voiceManager.listenAndHandle(navController = navController)
+                    } else {
+                        permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                    }
+                }
             )
-    ) {
-
-        val scrollState = rememberScrollState()
-
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .padding(paddingValues)
                 .verticalScroll(scrollState)
-                .padding(
-                    start = 24.dp,
-                    end = 24.dp,
-                    top = 24.dp,
-                    bottom = 120.dp
-                )
-        ){
+                .padding(horizontal = 24.dp)
+        ) {
+            Spacer(modifier = Modifier.height(48.dp))
 
-            Spacer(modifier = Modifier.height(40.dp))
-
+            // Greeting Section
             Text(
-                text = "Good Evening 👋",
-                color = Color(0xFF94A3B8),
-                fontSize = 16.sp
+                text = "Welcome back,",
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary
             )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
             Text(
                 text = "Sambhav",
-                color = Color.White,
-                fontSize = 32.sp,
-                fontWeight = FontWeight.Bold
+                style = MaterialTheme.typography.headlineLarge,
+                color = TextPrimary
             )
-            Spacer(modifier = Modifier.height(16.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF1E293B)
-                )
-            ) {
-                Column(
-                    modifier = Modifier.padding(16.dp)
-                ) {
-
-                    Text(
-                        text = "Last Voice Command",
-                        color = Color.Gray,
-                        fontSize = 12.sp
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = detectedCommand,
-                        color = Color.Cyan,
-                        fontSize = 14.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = recognizedText,
-                        color = Color(0xFF22C55E),
-                        fontSize = 18.sp,
-                        fontWeight = FontWeight.SemiBold
-                    )
-                }
-            }
-
-            Spacer(modifier = Modifier.height(24.dp))
-            Text(
-                text = "Your Voice. Your Payments.",
-                color = Color.LightGray,
-                fontSize = 16.sp
-            )
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(24.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = Color(0xFF22C55E)
-                )
-            ) {
-
-                Column(
-                    modifier = Modifier.padding(24.dp)
-                ) {
-
-                    Text(
-                        text = "Available Balance",
-                        color = Color.White.copy(alpha = 0.8f),
-                        fontSize = 14.sp
-                    )
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    Text(
-                        text = "₹${BalanceStore.balance.value}",
-                        color = Color.White,
-                        fontSize = 32.sp,
-                        fontWeight = FontWeight.Bold
-                    )
-                }
-            }
-            Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "Quick Actions",
-                color = Color.White,
-                fontSize = 18.sp,
-                fontWeight = FontWeight.SemiBold
-            )
-
-//            Spacer(modifier = Modifier.height(12.dp))
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            FeatureCard(
-                title = "💸 Send Money",
-                onClick = {
-                    navController.navigate(
-                        Routes.paymentRoute(
-                            amount = 0,
-                            receiver = "Receiver"
-                        )
-                    )
-                }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            FeatureCard(
-                title = "📱 Mobile Recharge",
-                onClick = {
-                    navController.navigate(
-                        Routes.RECHARGE
-                    )
-                }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            FeatureCard(
-                title = "🏦 Check Balance",
-                onClick = {
-                    navController.navigate(
-                        Routes.BALANCE
-                    )
-                }
-            )
-            Spacer(modifier = Modifier.height(12.dp))
-
-            FeatureCard(
-                title = "⚙️ Settings",
-                onClick = {
-                    navController.navigate(
-                        Routes.SETTINGS
-                    )
-                }
-            )
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            FeatureCard (
-                title ="Transaction History",
-                onClick = {
-                    navController.navigate(
-                        Routes.HISTORY
-                    )
-                }
-            )
-        }
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(bottom = 32.dp),
-            contentAlignment = Alignment.BottomCenter
-        ) {
-
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally
+            // Hero Balance Card
+            PremiumCard(
+                gradient = GradientIndigo
             ) {
-
                 Text(
-                    text = when (voiceState) {
-                        VoiceState.WAKING ->
-                            "Waiting for 'Hey Assistant'"
-
-                        VoiceState.LISTENING ->
-                            "Listening..."
-
-                        VoiceState.IDLE ->
-                            "Tap to Speak"
-
-                        VoiceState.PROCESSING ->
-                            "Processing..."
-
-                        VoiceState.PROMPTING ->
-                            "Thinking..."
-
-                        VoiceState.RESPONDING ->
-                            "Answering..."
-
-                        VoiceState.CLOSING ->
-                            "Goodbye"
-                    },
-                    color = Color.White
+                    text = "Total Balance",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = Color.White.copy(alpha = 0.7f)
                 )
-
-                Spacer(modifier = Modifier.height(12.dp))
-
-                VoiceAssistantFab(
-                    voiceState = voiceState,
-                    onClick = {
-
-                        if (
-                            PermissionManager.hasAudioPermission(
-                                context
-                            )
-                        ) {
-
-                            voiceState = VoiceState.LISTENING
-
-                            voiceManager.listenAndHandle(
-                                navController = navController
-                            )
-
-                        } else {
-
-                            permissionLauncher.launch(
-                                Manifest.permission.RECORD_AUDIO
-                            )
-                        }
-
+                Spacer(modifier = Modifier.height(8.dp))
+                Row(
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(
+                        text = "₹${BalanceStore.balance.value}",
+                        style = MaterialTheme.typography.headlineLarge,
+                        color = Color.White
+                    )
+                    Spacer(modifier = Modifier.weight(1f))
+                    IconButton(
+                        onClick = { navController.navigate(Routes.BALANCE) },
+                        colors = IconButtonDefaults.iconButtonColors(
+                            containerColor = Color.White.copy(alpha = 0.2f)
+                        )
+                    ) {
+                        Icon(Icons.Default.ArrowForward, contentDescription = null, tint = Color.White)
                     }
-
-                )
-
+                }
             }
-        }
 
+            Spacer(modifier = Modifier.height(32.dp))
+
+            SectionHeader(title = "Quick Actions")
+            
+            Row(modifier = Modifier.fillMaxWidth()) {
+                QuickActionChip(
+                    title = "Send",
+                    icon = Icons.Default.Send,
+                    onClick = { navController.navigate(Routes.paymentRoute(0, "Receiver")) },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                QuickActionChip(
+                    title = "Recharge",
+                    icon = Icons.Default.Smartphone,
+                    onClick = { navController.navigate(Routes.RECHARGE) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
+                QuickActionChip(
+                    title = "History",
+                    icon = Icons.Default.History,
+                    onClick = { navController.navigate(Routes.HISTORY) },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                QuickActionChip(
+                    title = "Stats",
+                    icon = Icons.Default.BarChart,
+                    onClick = { navController.navigate(Routes.STATS) },
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
+            SectionHeader(title = "App Experience")
+            
+            PremiumCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.AutoAwesome,
+                        contentDescription = null,
+                        tint = PrimaryIndigo,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Voice Controlled",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "Just say 'Hey Assistant' to pay or recharge.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                }
+            }
+            
+            Spacer(modifier = Modifier.height(32.dp))
+        }
     }
 }
 
 @Composable
-fun FeatureCard(title: String,
-                onClick: () -> Unit) {
-
-    Card(
+fun VoiceAssistantSection(
+    voiceState: VoiceState,
+    onClick: () -> Unit
+) {
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable {
-                onClick()
-            },
-        shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = Color(0xFF334155)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 8.dp
-        )
-    ) {
-
-        Row(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(24.dp),
-            horizontalArrangement = Arrangement.SpaceBetween,
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-
-            Text(
-                text = title,
-                color = Color.White,
-                fontSize = 20.sp,
-                fontWeight = FontWeight.SemiBold
+            .background(
+                Brush.verticalGradient(
+                    listOf(Color.Transparent, Obsidian.copy(alpha = 0.9f))
+                )
             )
-
+            .padding(bottom = 24.dp, top = 16.dp),
+        contentAlignment = Alignment.Center
+    ) {
+        Column(horizontalAlignment = Alignment.CenterHorizontally) {
             Text(
-                text = "→",
-                color = Color.White,
-                fontSize = 24.sp
+                text = when (voiceState) {
+                    VoiceState.WAKING -> "Say 'Hey Assistant'"
+                    VoiceState.LISTENING -> "I'm listening..."
+                    VoiceState.PROCESSING -> "Processing..."
+                    VoiceState.PROMPTING -> "Thinking..."
+                    VoiceState.RESPONDING -> "One moment..."
+                    else -> "Tap to speak"
+                },
+                style = MaterialTheme.typography.bodyMedium,
+                color = if (voiceState == VoiceState.LISTENING) SecondaryEmerald else TextSecondary
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+            VoiceAssistantFab(
+                voiceState = voiceState,
+                onClick = onClick
             )
         }
     }

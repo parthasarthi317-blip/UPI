@@ -4,19 +4,24 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.runtime.Composable
 
-private val VoicePayColorScheme = darkColorScheme(
-
-    primary = PrimaryGreen,
-    secondary = SecondaryGreen,
-
-    background = DarkBackground,
-    surface = DarkSurface,
-
-    onPrimary = TextWhite,
-    onSecondary = TextWhite,
-
-    onBackground = TextWhite,
-    onSurface = TextWhite
+private val EclipseColorScheme = darkColorScheme(
+    primary = PrimaryIndigo,
+    secondary = SecondaryEmerald,
+    tertiary = WarningAmber,
+    
+    background = Obsidian,
+    surface = DeepSlate,
+    
+    onPrimary = TextPrimary,
+    onSecondary = TextPrimary,
+    onTertiary = Obsidian,
+    
+    onBackground = TextPrimary,
+    onSurface = TextPrimary,
+    
+    error = ErrorRose,
+    outline = TextDisabled,
+    surfaceVariant = CardSurface
 )
 
 @Composable
@@ -24,7 +29,7 @@ fun UPIOneMoreTimeTheme(
     content: @Composable () -> Unit
 ) {
     MaterialTheme(
-        colorScheme = VoicePayColorScheme,
+        colorScheme = EclipseColorScheme,
         typography = Typography,
         content = content
     )

@@ -1,370 +1,216 @@
 package com.example.upionemoretime.screens
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
-import androidx.compose.material3.Button
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Smartphone
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.upionemoretime.navigation.Routes
-import com.example.upionemoretime.ui.components.GlobalVoiceFab
-import androidx.compose.ui.platform.LocalContext
-import com.example.upionemoretime.voice.VoiceLauncher
-import androidx.compose.material3.OutlinedTextField
-import com.example.upionemoretime.voice.BalanceStore
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.setValue
-import com.example.upionemoretime.voice.VoiceCommand
-import com.example.upionemoretime.voice.VoiceCommandParser
-import com.example.upionemoretime.voice.SpeechRecognitionManager
-import com.example.upionemoretime.voice.TextToSpeechManager
-import com.example.upionemoretime.voice.VoiceNavigationHandler
-import com.example.upionemoretime.voice.TransactionHistoryStore
+import com.example.upionemoretime.ui.components.PremiumCard
+import com.example.upionemoretime.ui.components.SectionHeader
+import com.example.upionemoretime.ui.theme.*
+import com.example.upionemoretime.voice.*
+
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun RechargeScreen(
     navController: NavController,
     initialMobileNumber: String = "",
     initialAmount: Int = 0
 ) {
-
     val context = LocalContext.current
-    val ttsManager = remember {
-        TextToSpeechManager(context)
-    }
+    val ttsManager = remember { TextToSpeechManager(context) }
+    val speechManager = remember { SpeechRecognitionManager(context) }
 
-    val speechManager = remember {
-        SpeechRecognitionManager(context)
-    }
-    androidx.compose.runtime.DisposableEffect(Unit) {
+    var rechargeSuccess by remember { mutableStateOf(false) }
+    var mobileNumber by remember { mutableStateOf(initialMobileNumber) }
+    var rechargeAmount by remember { mutableStateOf(if (initialAmount == 0) "" else initialAmount.toString()) }
+    var showConfirmation by remember { mutableStateOf(false) }
+
+    DisposableEffect(Unit) {
         onDispose {
             speechManager.destroy()
+            ttsManager.shutdown()
         }
     }
 
-    var showConfirmation by remember {
-        mutableStateOf(false)
-    }
-    var rechargeSuccess by remember {
-        mutableStateOf(false)
-    }
-
-    var mobileNumber by remember {
-        mutableStateOf(initialMobileNumber)
-    }
-
-    var rechargeAmount by remember {
-        mutableStateOf(
-            if (initialAmount == 0) ""
-            else initialAmount.toString()
-        )
-    }
-    if (rechargeSuccess) {
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp),
-            verticalArrangement = Arrangement.Center
-        ) {
-
-            Text(
-                text = "✅ Recharge Successful"
+    Scaffold(
+        containerColor = Obsidian,
+        topBar = {
+            TopAppBar(
+                title = { Text("Mobile Recharge", style = MaterialTheme.typography.titleLarge) },
+                navigationIcon = {
+                    IconButton(onClick = { navController.popBackStack() }) {
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = TextPrimary)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
             )
+        }
+    ) { paddingValues ->
+        Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
+            if (rechargeSuccess) {
+                RechargeSuccessState(rechargeAmount, mobileNumber) {
+                    navController.navigate(Routes.HOME) { popUpTo(0) }
+                }
+            } else {
+                RechargeInputState(
+                    mobileNumber = mobileNumber,
+                    onMobileChange = { mobileNumber = it },
+                    rechargeAmount = rechargeAmount,
+                    onAmountChange = { rechargeAmount = it },
+                    onProceed = {
+                        if (mobileNumber.length == 10 && rechargeAmount.toIntOrNull() != null) {
+                            showConfirmation = true
+                        } else {
+                            ttsManager.speak("Invalid details")
+                        }
+                    }
+                )
 
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Text(
-                text =
-                    "₹$rechargeAmount recharge completed for $mobileNumber"
-            )
-
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
-
-            Button(
-                onClick = {
-                    navController.navigate(
-                        Routes.HOME
+                if (showConfirmation) {
+                    ModalBottomSheet(
+                        onDismissRequest = { showConfirmation = false },
+                        containerColor = DeepSlate
                     ) {
-                        popUpTo(0)
+                        ConfirmationContent(
+                            mobileNumber = mobileNumber,
+                            rechargeAmount = rechargeAmount,
+                            onConfirm = {
+                                TransactionHistoryStore.rechargeHistory.add("₹$rechargeAmount -> $mobileNumber")
+                                rechargeSuccess = true
+                                showConfirmation = false
+                            }
+                        )
                     }
                 }
-            ) {
-                Text("Back To Home")
             }
         }
-
-        return
     }
-    Box(
-        modifier = Modifier.fillMaxSize()
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(24.dp)
-        ) {
-            Text(
-                text = "Mobile Recharge"
-            )
+}
 
-            Spacer(
-                modifier = Modifier.height(24.dp)
-            )
-
+@Composable
+fun RechargeInputState(
+    mobileNumber: String,
+    onMobileChange: (String) -> Unit,
+    rechargeAmount: String,
+    onAmountChange: (String) -> Unit,
+    onProceed: () -> Unit
+) {
+    Column(modifier = Modifier.fillMaxSize().padding(24.dp)) {
+        PremiumCard {
             OutlinedTextField(
                 value = mobileNumber,
-                onValueChange = {
-                    mobileNumber = it
-                },
-                label = {
-                    Text("Mobile Number")
-                },
-                modifier = Modifier.fillMaxWidth()
+                onValueChange = onMobileChange,
+                label = { Text("Mobile Number") },
+                modifier = Modifier.fillMaxWidth(),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryIndigo,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f)
+                ),
+                shape = RoundedCornerShape(16.dp),
+                leadingIcon = { Icon(Icons.Default.Smartphone, contentDescription = null) }
             )
-
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
+            Spacer(modifier = Modifier.height(16.dp))
             OutlinedTextField(
                 value = rechargeAmount,
-
-                onValueChange = {
-                    rechargeAmount = it
-                },
-                label = {
-                    Text("Recharge Amount")
-                },
-                modifier = Modifier.fillMaxWidth()
-            )
-            Spacer(
-                modifier = Modifier.height(16.dp)
-            )
-
-            Text("Popular Plans")
-
-            Spacer(
-                modifier = Modifier.height(8.dp)
-            )
-
-            Row(
+                onValueChange = onAmountChange,
+                label = { Text("Recharge Amount") },
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement =
-                    Arrangement.SpaceEvenly
-            ) {
-
-                Button(
-                    onClick = {
-                        rechargeAmount = "199"
-                    }
-                ) {
-                    Text("₹199")
-                }
-
-                Button(
-                    onClick = {
-                        rechargeAmount = "299"
-                    }
-                ) {
-                    Text("₹299")
-                }
-
-                Button(
-                    onClick = {
-                        rechargeAmount = "719"
-                    }
-                ) {
-                    Text("₹719")
-                }
-            }
-
-            Spacer(
-                modifier = Modifier.height(24.dp)
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryIndigo,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f)
+                ),
+                shape = RoundedCornerShape(16.dp),
+                prefix = { Text("₹") }
             )
+        }
 
-            Button(
-                onClick = {
-
-                    if (
-                        mobileNumber.length == 10 &&
-                        rechargeAmount.toIntOrNull() != null &&
-                        rechargeAmount.toInt() > 0
-                    ) {
-
-                        showConfirmation = true
-
-                    } else {
-
-                        ttsManager.speak(
-                            "Please enter a valid mobile number and recharge amount"
-                        )
-                    }
-                },
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text("Proceed")
-            }
-
-            Spacer(
-                modifier = Modifier.height(12.dp)
-            )
-            if (showConfirmation) {
-
-                Spacer(
-                    modifier = Modifier.height(24.dp)
-                )
-
-                Text(
-                    text = "Recharge Number: $mobileNumber"
-                )
-
-                Spacer(
-                    modifier = Modifier.height(8.dp)
-                )
-
-                Text(
-                    text = "Amount: ₹$rechargeAmount"
-                )
-
-                Spacer(
-                    modifier = Modifier.height(16.dp)
-                )
-
+        Spacer(modifier = Modifier.height(32.dp))
+        SectionHeader(title = "Popular Plans")
+        
+        Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            listOf("199", "299", "719").forEach { plan ->
                 Button(
-                    onClick = {
-                        TransactionHistoryStore.rechargeHistory.add(
-                            "₹$rechargeAmount -> $mobileNumber"
-                        )
-
-                        rechargeSuccess = true
-                    },
-                    modifier = Modifier.fillMaxWidth()
+                    onClick = { onAmountChange(plan) },
+                    modifier = Modifier.weight(1f),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = if (rechargeAmount == plan) PrimaryIndigo else CardSurface
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Text("Confirm Recharge")
+                    Text("₹$plan")
                 }
-
-                Spacer(
-                    modifier = Modifier.height(8.dp)
-                )
-
-                Button(
-                    onClick = {
-
-                        showConfirmation = false
-
-                        rechargeAmount = ""
-                        mobileNumber = ""
-
-                    },
-                    modifier = Modifier.fillMaxWidth()
-                ) {
-                    Text("Cancel")
-                }
-            }
-            if (
-                TransactionHistoryStore.rechargeHistory.isNotEmpty()
-            ){
-
-                Spacer(
-                    modifier = Modifier.height(24.dp)
-                )
-
-                Text("Recent Recharges")
-
-                TransactionHistoryStore.rechargeHistory
-                    .takeLast(5).reversed().forEach {
-
-                    Text(it)
-                }
-            }
-
-            Button(
-                onClick = {
-                    navController.popBackStack()
-                }
-            ) {
-                Text("Back")
             }
         }
 
-        GlobalVoiceFab(
-            onClick = {
+        Spacer(modifier = Modifier.weight(1f))
+        Button(
+            onClick = onProceed,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+        ) {
+            Text("Proceed", fontWeight = FontWeight.Bold)
+        }
+        Spacer(modifier = Modifier.height(16.dp))
+    }
+}
 
-                speechManager.startListening(
-
-                    onResult = { result ->
-                        android.util.Log.d(
-                            "RECHARGE_VOICE",
-                            result
-                        )
-
-                        val command =
-                            VoiceCommandParser.parse(result)
-
-                        when (command) {
-                            is VoiceCommand.SelectRechargePlan -> {
-
-                                rechargeAmount =
-                                    command.amount.toString()
-
-                                ttsManager.speak(
-                                    "Plan selected for rupees ${command.amount}"
-                                )
-                            }
-
-                            VoiceCommand.ConfirmRecharge -> {
-
-                                if (showConfirmation) {
-
-                                    ttsManager.speak(
-                                        "Recharge of rupees $rechargeAmount for mobile number $mobileNumber completed successfully"
-                                    )
-                                    TransactionHistoryStore.rechargeHistory.add(
-                                        "₹$rechargeAmount -> $mobileNumber"
-                                    )
-
-                                    rechargeSuccess = true
-                                }
-                            }
-
-                            VoiceCommand.CancelRecharge -> {
-
-                                if (showConfirmation) {
-
-                                    ttsManager.speak(
-                                        "Recharge cancelled"
-                                    )
-
-                                    showConfirmation = false
-
-                                    rechargeAmount = ""
-                                    mobileNumber = ""
-                                }
-                            }
-
-                            else -> {
-
-                                VoiceNavigationHandler.handleCommand(
-                                    command = command,
-                                    navController = navController,
-                                    ttsManager = ttsManager
-                                )
-                            }
-                        }
-                    },
-
-                    onError = {
-
-                    }
-                )
+@Composable
+fun ConfirmationContent(mobileNumber: String, rechargeAmount: String, onConfirm: () -> Unit) {
+    Column(modifier = Modifier.padding(24.dp).padding(bottom = 24.dp)) {
+        Text("Review Recharge", style = MaterialTheme.typography.titleLarge)
+        Spacer(modifier = Modifier.height(24.dp))
+        PremiumCard {
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Column {
+                    Text("NUMBER", style = MaterialTheme.typography.labelSmall)
+                    Text(mobileNumber, style = MaterialTheme.typography.titleLarge)
+                    Spacer(modifier = Modifier.height(12.dp))
+                    Text("AMOUNT", style = MaterialTheme.typography.labelSmall)
+                    Text("₹$rechargeAmount", style = MaterialTheme.typography.headlineMedium, color = PrimaryIndigo)
+                }
             }
-        )
+        }
+        Spacer(modifier = Modifier.height(32.dp))
+        Button(
+            onClick = onConfirm,
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            shape = CircleShape,
+            colors = ButtonDefaults.buttonColors(containerColor = SecondaryEmerald)
+        ) {
+            Text("Confirm Recharge", fontWeight = FontWeight.Bold)
+        }
+    }
+}
+
+@Composable
+fun RechargeSuccessState(amount: String, mobileNumber: String, onHomeClick: () -> Unit) {
+    Column(
+        modifier = Modifier.fillMaxSize().padding(24.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.Center
+    ) {
+        Icon(Icons.Default.CheckCircle, null, tint = SecondaryEmerald, modifier = Modifier.size(100.dp))
+        Spacer(modifier = Modifier.height(32.dp))
+        Text("Recharge Successful", style = MaterialTheme.typography.headlineMedium)
+        Text("₹$amount recharge completed for $mobileNumber", style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+        Spacer(modifier = Modifier.height(48.dp))
+        Button(onHomeClick, modifier = Modifier.fillMaxWidth().height(56.dp), shape = CircleShape) {
+            Text("Back To Home")
+        }
     }
 }
