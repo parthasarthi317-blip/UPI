@@ -26,7 +26,7 @@ fun AppNavigation(voiceManager: VoiceManager) {
         startDestination = Routes.HOME
     ) {
         composable(Routes.HISTORY) {
-            HistoryScreen(navController)
+            HistoryScreen(navController, voiceManager)
         }
 
         composable(Routes.HOME) {
@@ -54,12 +54,13 @@ fun AppNavigation(voiceManager: VoiceManager) {
             PaymentScreen(
                 amount = amount,
                 receiver = receiver,
-                        navController = navController
+                navController = navController,
+                voiceManager = voiceManager
             )
         }
 
         composable(Routes.BALANCE) {
-            BalanceScreen(navController)
+            BalanceScreen(navController, voiceManager)
         }
 
         composable(route = Routes.RECHARGE_ROUTE) {
@@ -74,23 +75,27 @@ fun AppNavigation(voiceManager: VoiceManager) {
                     ?.getString("amount")
                     ?.toIntOrNull()
                     ?: 0
-            RechargeScreen(navController= navController,
+            RechargeScreen(
+                navController = navController,
+                voiceManager = voiceManager,
                 initialMobileNumber = mobileNumber,
-                initialAmount = amount)
+                initialAmount = amount
+            )
         }
         composable(
             route = Routes.RECHARGE
         ) {
             RechargeScreen(
-                navController = navController
+                navController = navController,
+                voiceManager = voiceManager
             )
         }
 
         composable(Routes.SETTINGS) {
-            SettingsScreen(navController)
+            SettingsScreen(navController, voiceManager)
         }
         composable(Routes.STATS) {
-            StatsScreen(navController)
+            StatsScreen(navController, voiceManager)
         }
     }
 }

@@ -7,30 +7,20 @@ import androidx.compose.material.icons.filled.AccountBalanceWallet
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.DisposableEffect
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
 import com.example.upionemoretime.ui.components.PremiumCard
 import com.example.upionemoretime.ui.theme.*
 import com.example.upionemoretime.voice.BalanceStore
-import com.example.upionemoretime.voice.TextToSpeechManager
+import com.example.upionemoretime.voice.VoiceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BalanceScreen(navController: NavController) {
-    val context = LocalContext.current
-    val ttsManager = remember { TextToSpeechManager(context) }
-
-    DisposableEffect(Unit) {
-        onDispose { ttsManager.shutdown() }
-    }
-
+fun BalanceScreen(navController: NavController, voiceManager: VoiceManager) {
     Scaffold(
         containerColor = Obsidian,
         topBar = {
@@ -69,7 +59,7 @@ fun BalanceScreen(navController: NavController) {
             Spacer(modifier = Modifier.height(32.dp))
             
             Button(
-                onClick = { ttsManager.speak("Your balance is ${BalanceStore.balance.value} rupees") },
+                onClick = { voiceManager.speak("Your balance is ${BalanceStore.balance.value} rupees") },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = CircleShape,
                 colors = ButtonDefaults.buttonColors(containerColor = CardSurface)

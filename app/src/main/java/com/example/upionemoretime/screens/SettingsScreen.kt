@@ -11,11 +11,9 @@ import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.upionemoretime.navigation.Routes
 import com.example.upionemoretime.ui.components.GlobalVoiceFab
-import androidx.compose.ui.platform.LocalContext
-import com.example.upionemoretime.voice.VoiceLauncher
+import com.example.upionemoretime.voice.VoiceManager
 @Composable
-fun SettingsScreen(navController: NavController) {
-    val context = LocalContext.current
+fun SettingsScreen(navController: NavController, voiceManager: VoiceManager) {
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -63,8 +61,7 @@ fun SettingsScreen(navController: NavController) {
         }
         GlobalVoiceFab(
             onClick = {
-                VoiceLauncher.startListening(
-                    context = context,
+                voiceManager.listenAndHandle(
                     navController = navController
                 )
             }

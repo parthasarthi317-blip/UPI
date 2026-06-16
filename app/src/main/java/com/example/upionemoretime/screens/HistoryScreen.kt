@@ -24,22 +24,15 @@ import com.example.upionemoretime.ui.components.PremiumCard
 import com.example.upionemoretime.ui.components.SectionHeader
 import com.example.upionemoretime.ui.theme.*
 import com.example.upionemoretime.voice.TransactionHistoryStore
-import com.example.upionemoretime.voice.TextToSpeechManager
+import com.example.upionemoretime.voice.VoiceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HistoryScreen(navController: NavController) {
-    val context = LocalContext.current
-    val ttsManager = remember { TextToSpeechManager(context) }
-    
+fun HistoryScreen(navController: NavController, voiceManager: VoiceManager) {
     val allTransactions = remember {
         (TransactionHistoryStore.paymentHistory.map { TransactionItem(it, "Payment") } +
          TransactionHistoryStore.rechargeHistory.map { TransactionItem(it, "Recharge") })
         .sortedByDescending { it.rawText } // Simplified sorting
-    }
-
-    DisposableEffect(Unit) {
-        onDispose { ttsManager.shutdown() }
     }
 
     Scaffold(
@@ -74,7 +67,7 @@ fun HistoryScreen(navController: NavController) {
                         onClick = {
                             TransactionHistoryStore.rechargeHistory.clear()
                             TransactionHistoryStore.paymentHistory.clear()
-                            ttsManager.speak("History cleared")
+                            voiceManager.speak("History cleared")
                             navController.popBackStack()
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),

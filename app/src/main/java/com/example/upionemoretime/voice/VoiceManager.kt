@@ -6,6 +6,10 @@ import android.os.Looper
 import android.util.Log
 import androidx.navigation.NavController
 
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asStateFlow
+
 class VoiceManager(
     private val context: Context
 ) {
@@ -18,7 +22,15 @@ class VoiceManager(
     private var currentNavController: NavController? = null
     private val mainHandler = Handler(Looper.getMainLooper())
 
-    private var currentState = VoiceState.IDLE
+    private val _state = MutableStateFlow(VoiceState.IDLE)
+    val state: StateFlow<VoiceState> = _state.asStateFlow()
+
+    private var currentState: VoiceState
+        get() = _state.value
+        set(value) {
+            _state.value = value
+        }
+
     private var retryCount = 0
     private val MAX_RETRIES = 2 // Reduced to 2 for faster exit on silence
 
@@ -69,6 +81,7 @@ class VoiceManager(
             }
             VoiceState.PROMPTING, VoiceState.RESPONDING, VoiceState.CLOSING -> {
                 wakeWordManager.stopListening()
+                speechManager.stopListening() // Explicitly stop the mic to avoid late beeps
                 followUpSessionManager.stopTimeout()
             }
             VoiceState.LISTENING -> {

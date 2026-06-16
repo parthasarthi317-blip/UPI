@@ -12,7 +12,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -27,21 +26,11 @@ import com.example.upionemoretime.voice.*
 fun PaymentScreen(
     amount: Int,
     receiver: String,
-    navController: NavController
+    navController: NavController,
+    voiceManager: VoiceManager
 ) {
-    val context = LocalContext.current
-    val ttsManager = remember { TextToSpeechManager(context) }
-    val speechManager = remember { SpeechRecognitionManager(context) }
-    
     var paymentSuccess by remember { mutableStateOf(false) }
     var paymentMessage by remember { mutableStateOf("") }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            speechManager.destroy()
-            ttsManager.shutdown()
-        }
-    }
 
     Scaffold(
         containerColor = Obsidian,
@@ -73,7 +62,7 @@ fun PaymentScreen(
                             TransactionHistoryStore.paymentHistory.add("₹$amount -> $receiver")
                             paymentSuccess = true
                         } else {
-                            ttsManager.speak("Insufficient balance")
+                            voiceManager.speak("Insufficient balance")
                             paymentMessage = "Insufficient Balance"
                         }
                     }

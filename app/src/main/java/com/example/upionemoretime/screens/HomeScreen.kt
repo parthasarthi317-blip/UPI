@@ -32,13 +32,13 @@ fun HomeScreen(navController: NavController, voiceManager: VoiceManager) {
     val context = LocalContext.current
     val scrollState = rememberScrollState()
     
-    var voiceState by remember { mutableStateOf<VoiceState>(VoiceState.WAKING) }
+    val voiceState by voiceManager.state.collectAsState()
     
     val permissionLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.RequestPermission()
     ) { granted ->
         if (granted) {
-            voiceState = VoiceState.LISTENING
+            voiceManager.listenAndHandle(navController = navController)
         }
     }
 
@@ -49,7 +49,6 @@ fun HomeScreen(navController: NavController, voiceManager: VoiceManager) {
                 voiceState = voiceState,
                 onClick = {
                     if (PermissionManager.hasAudioPermission(context)) {
-                        voiceState = VoiceState.LISTENING
                         voiceManager.listenAndHandle(navController = navController)
                     } else {
                         permissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
@@ -57,7 +56,8 @@ fun HomeScreen(navController: NavController, voiceManager: VoiceManager) {
                 }
             )
         }
-    ) { paddingValues ->
+    ) {
+paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

@@ -13,7 +13,6 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavController
@@ -27,24 +26,14 @@ import com.example.upionemoretime.voice.*
 @Composable
 fun RechargeScreen(
     navController: NavController,
+    voiceManager: VoiceManager,
     initialMobileNumber: String = "",
     initialAmount: Int = 0
 ) {
-    val context = LocalContext.current
-    val ttsManager = remember { TextToSpeechManager(context) }
-    val speechManager = remember { SpeechRecognitionManager(context) }
-
     var rechargeSuccess by remember { mutableStateOf(false) }
     var mobileNumber by remember { mutableStateOf(initialMobileNumber) }
     var rechargeAmount by remember { mutableStateOf(if (initialAmount == 0) "" else initialAmount.toString()) }
     var showConfirmation by remember { mutableStateOf(false) }
-
-    DisposableEffect(Unit) {
-        onDispose {
-            speechManager.destroy()
-            ttsManager.shutdown()
-        }
-    }
 
     Scaffold(
         containerColor = Obsidian,
@@ -75,7 +64,7 @@ fun RechargeScreen(
                         if (mobileNumber.length == 10 && rechargeAmount.toIntOrNull() != null) {
                             showConfirmation = true
                         } else {
-                            ttsManager.speak("Invalid details")
+                            voiceManager.speak("Invalid details")
                         }
                     }
                 )
