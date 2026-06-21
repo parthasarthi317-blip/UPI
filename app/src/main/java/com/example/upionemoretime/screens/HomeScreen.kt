@@ -149,6 +149,48 @@ paddingValues ->
 
             Spacer(modifier = Modifier.height(32.dp))
 
+            SectionHeader(title = "Voice Security")
+            
+            PremiumCard {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Icon(
+                        Icons.Default.Security,
+                        contentDescription = null,
+                        tint = SecondaryEmerald,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = "Voice Identity",
+                            style = MaterialTheme.typography.titleLarge,
+                            color = TextPrimary
+                        )
+                        Text(
+                            text = "Used for high-value transactions.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                        Spacer(modifier = Modifier.height(12.dp))
+                        Button(
+                            onClick = { voiceManager.resetVoiceData() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ErrorRose.copy(alpha = 0.2f),
+                                contentColor = ErrorRose
+                            ),
+                            modifier = Modifier.height(36.dp),
+                            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 0.dp)
+                        ) {
+                            Icon(Icons.Default.Delete, contentDescription = null, modifier = Modifier.size(16.dp))
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Text("Reset Voice Print", style = MaterialTheme.typography.labelLarge)
+                        }
+                    }
+                }
+            }
+
+            Spacer(modifier = Modifier.height(32.dp))
+
             SectionHeader(title = "App Experience")
             
             PremiumCard {
@@ -204,10 +246,18 @@ fun VoiceAssistantSection(
                     VoiceState.PROCESSING -> "Processing..."
                     VoiceState.PROMPTING -> "Thinking..."
                     VoiceState.RESPONDING -> "One moment..."
+                    VoiceState.ENROLLING, VoiceState.ENROLLING_VOICE -> "Voice Enrollment..."
+                    VoiceState.AUTHENTICATING, VoiceState.AUTHENTICATING_VOICE -> "Verifying Identity..."
+                    VoiceState.UNAUTHORIZED -> "Access Denied"
                     else -> "Tap to speak"
                 },
                 style = MaterialTheme.typography.bodyMedium,
-                color = if (voiceState == VoiceState.LISTENING) SecondaryEmerald else TextSecondary
+                color = when (voiceState) {
+                    VoiceState.LISTENING, VoiceState.ENROLLING, VoiceState.ENROLLING_VOICE, 
+                    VoiceState.AUTHENTICATING, VoiceState.AUTHENTICATING_VOICE -> SecondaryEmerald
+                    VoiceState.UNAUTHORIZED -> ErrorRose
+                    else -> TextSecondary
+                }
             )
             Spacer(modifier = Modifier.height(16.dp))
             VoiceAssistantFab(

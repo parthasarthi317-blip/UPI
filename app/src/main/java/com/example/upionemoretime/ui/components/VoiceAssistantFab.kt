@@ -31,9 +31,13 @@ fun VoiceAssistantFab(
     onClick: () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val isWorking = voiceState == VoiceState.LISTENING || 
+                     voiceState == VoiceState.ENROLLING || voiceState == VoiceState.ENROLLING_VOICE ||
+                     voiceState == VoiceState.AUTHENTICATING || voiceState == VoiceState.AUTHENTICATING_VOICE
+
     val scale by infiniteTransition.animateFloat(
         initialValue = 1f,
-        targetValue = if (voiceState == VoiceState.LISTENING) 1.2f else 1f,
+        targetValue = if (isWorking) 1.2f else 1f,
         animationSpec = infiniteRepeatable(
             animation = tween(1000, easing = FastOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
@@ -42,15 +46,17 @@ fun VoiceAssistantFab(
     )
 
     val glowColor = when (voiceState) {
-        VoiceState.LISTENING -> SecondaryEmerald
+        VoiceState.LISTENING, VoiceState.ENROLLING, VoiceState.ENROLLING_VOICE,
+        VoiceState.AUTHENTICATING, VoiceState.AUTHENTICATING_VOICE -> SecondaryEmerald
         VoiceState.PROCESSING -> WarningAmber
         VoiceState.RESPONDING -> PrimaryIndigo
+        VoiceState.UNAUTHORIZED -> ErrorRose
         else -> PrimaryIndigo.copy(alpha = 0.5f)
     }
 
     Box(contentAlignment = Alignment.Center) {
         // Outer Glow
-        if (voiceState == VoiceState.LISTENING) {
+        if (isWorking) {
             Box(
                 modifier = Modifier
                     .size(80.dp)
@@ -70,7 +76,7 @@ fun VoiceAssistantFab(
                 .border(2.dp, Color.White.copy(alpha = 0.2f), CircleShape)
         ) {
             Icon(
-                imageVector = if (voiceState == VoiceState.LISTENING) Icons.Default.SettingsVoice else Icons.Default.Mic,
+                imageVector = if (isWorking) Icons.Default.SettingsVoice else Icons.Default.Mic,
                 contentDescription = null,
                 tint = Color.White,
                 modifier = Modifier.size(32.dp)
