@@ -177,7 +177,7 @@ class VoiceManager(
             if (textMatch && voiceEmbedding != null && master != null) {
                 val similarity = biometricManager.getSimilarity(master, voiceEmbedding)
                 Log.d("BIOMETRIC", "Final Similarity: $similarity")
-                if (similarity > 0.60f) {
+                if (similarity > 0.75f) {
                     val command = pendingCommand
                     pendingCommand = null
                     if (command != null) {
