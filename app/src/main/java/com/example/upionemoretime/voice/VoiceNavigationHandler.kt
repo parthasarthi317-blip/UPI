@@ -123,6 +123,9 @@ object VoiceNavigationHandler {
             }
 
             VoiceCommand.Unknown -> {}
+            VoiceCommand.ResetVoice -> {
+                // Handled in VoiceManager directly or we can add logic here if we pass VoiceManager
+            }
             else -> {}
         }
     }

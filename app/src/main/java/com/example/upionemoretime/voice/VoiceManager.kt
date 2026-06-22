@@ -4,12 +4,14 @@ import android.content.Context
 import android.os.Handler
 import android.os.Looper
 import android.util.Log
+import androidx.fragment.app.FragmentActivity
 import androidx.navigation.NavController
 
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import com.example.upionemoretime.voice.biometrics.VoiceBiometricManager
+import com.example.upionemoretime.voice.biometrics.FingerprintAuthManager
 
 class VoiceManager(
     private val context: Context
@@ -20,6 +22,7 @@ class VoiceManager(
     private val wakeWordManager = WakeWordManager(speechManager)
     private val followUpSessionManager = FollowUpSessionManager()
     private val biometricManager = VoiceBiometricManager(context)
+    private val fingerprintManager = FingerprintAuthManager(context)
 
     private var currentNavController: NavController? = null
     private val mainHandler = Handler(Looper.getMainLooper())
@@ -34,7 +37,7 @@ class VoiceManager(
         }
 
     private var retryCount = 0
-    private val MAX_RETRIES = 2 
+    private val MAX_RETRIES = 2
 
     private var pendingCommand: VoiceCommand? = null
     private var verificationChallenge: String = ""
@@ -62,6 +65,9 @@ class VoiceManager(
                     }
                     VoiceState.AUTHENTICATING_VOICE -> {
                         mainHandler.postDelayed({ startVoiceVerificationCapture() }, 1000)
+                    }
+                    VoiceState.AUTHENTICATING_FINGERPRINT -> {
+                        // Handled separately
                     }
                     VoiceState.ENROLLING -> {
                         startEnrollmentCapture()
@@ -114,6 +120,7 @@ class VoiceManager(
                 }
             }
             VoiceState.PROCESSING, VoiceState.AUTHENTICATING, VoiceState.AUTHENTICATING_VOICE,
+            VoiceState.AUTHENTICATING_FINGERPRINT,
             VoiceState.ENROLLING, VoiceState.ENROLLING_VOICE -> {
                 followUpSessionManager.stopTimeout()
             }
@@ -139,7 +146,7 @@ class VoiceManager(
                 val normalizedResult = result.lowercase().replace(Regex("[^a-z0-9]"), "")
                 val normalizedChallenge = verificationChallenge.lowercase().replace(Regex("[^a-z0-9]"), "")
                 val matched = normalizedResult.contains(normalizedChallenge) || normalizedChallenge.contains(normalizedResult)
-                
+
                 if (matched) {
                     mainHandler.post {
                         transitionTo(VoiceState.AUTHENTICATING_VOICE)
@@ -164,7 +171,7 @@ class VoiceManager(
             Log.d("BIOMETRIC", "Voice Verification Capture Finished. Embedding: ${embedding?.size ?: "NULL"}")
             finalizeVerificationInternal(true, embedding)
         }
-        
+
         // Auto-stop after 4 seconds (enough time for one phrase)
         mainHandler.postDelayed({
             biometricManager.stopCapture()
@@ -178,14 +185,7 @@ class VoiceManager(
                 val similarity = biometricManager.getSimilarity(master, voiceEmbedding)
                 Log.d("BIOMETRIC", "Final Similarity: $similarity")
                 if (similarity > 0.75f) {
-                    val command = pendingCommand
-                    pendingCommand = null
-                    if (command != null) {
-                        transitionTo(VoiceState.RESPONDING)
-                        VoiceNavigationHandler.handleCommand(command, currentNavController!!, ttsManager)
-                    } else {
-                        transitionTo(VoiceState.WAKING)
-                    }
+                    startFingerprintAuthentication()
                 } else {
                     transitionTo(VoiceState.UNAUTHORIZED)
                 }
@@ -193,6 +193,52 @@ class VoiceManager(
                 Log.e("BIOMETRIC", "Verification Failed. Text: $textMatch, Voice: ${voiceEmbedding != null}")
                 transitionTo(VoiceState.UNAUTHORIZED)
             }
+        }
+    }
+
+    private fun startFingerprintAuthentication() {
+        val activity = context as? FragmentActivity
+        if (activity == null) {
+            Log.e("BIOMETRIC", "Context is not a FragmentActivity, cannot show Fingerprint prompt")
+            transitionTo(VoiceState.UNAUTHORIZED)
+            return
+        }
+
+        if (!fingerprintManager.canAuthenticate()) {
+            Log.w("BIOMETRIC", "Fingerprint hardware not available or no fingerprint enrolled.")
+            // Decide whether to fail or proceed with just voice.
+            // Requirements say "Use Android Fingerprint Authentication", so we should probably fail if required.
+            // But for a better UX, maybe we fall back to PIN if DEVICE_CREDENTIAL was allowed.
+            // For now, let's treat it as a requirement.
+            ttsManager.speak("Fingerprint authentication is not set up on this device.")
+            transitionTo(VoiceState.UNAUTHORIZED)
+            return
+        }
+
+        mainHandler.post {
+            transitionTo(VoiceState.AUTHENTICATING_FINGERPRINT)
+            fingerprintManager.authenticate(
+                activity = activity,
+                onSuccess = {
+                    val command = pendingCommand
+                    pendingCommand = null
+                    if (command != null) {
+                        transitionTo(VoiceState.RESPONDING)
+                        if (command == VoiceCommand.ResetVoice) {
+                            resetVoiceData()
+                            transitionTo(VoiceState.WAKING)
+                        } else {
+                            VoiceNavigationHandler.handleCommand(command, currentNavController!!, ttsManager)
+                        }
+                    } else {
+                        transitionTo(VoiceState.WAKING)
+                    }
+                },
+                onFailure = { error ->
+                    ttsManager.speak("Fingerprint authentication failed: $error")
+                    transitionTo(VoiceState.UNAUTHORIZED)
+                }
+            )
         }
     }
 
@@ -204,7 +250,7 @@ class VoiceManager(
                 val normalizedResult = result.lowercase().replace(Regex("[^a-z0-9]"), "")
                 val normalizedChallenge = verificationChallenge.lowercase().replace(Regex("[^a-z0-9]"), "")
                 val matched = normalizedResult.contains(normalizedChallenge) || normalizedChallenge.contains(normalizedResult)
-                
+
                 if (matched) {
                     mainHandler.post {
                         transitionTo(VoiceState.ENROLLING_VOICE)
@@ -218,7 +264,7 @@ class VoiceManager(
             },
             onError = { error ->
                 Log.e("BIOMETRIC", "Enrollment Speech Error: $error")
-                mainHandler.post { 
+                mainHandler.post {
                     // Retry text if failed
                     ttsManager.speak("Let's try that again. Say: $verificationChallenge")
                 }
@@ -232,7 +278,7 @@ class VoiceManager(
             Log.d("BIOMETRIC", "Enrollment Voice Capture Finished. Embedding: ${embedding?.size ?: "NULL"}")
             finalizeEnrollmentStepInternal(true, embedding)
         }
-        
+
         mainHandler.postDelayed({
             biometricManager.stopCapture()
         }, 4000)
@@ -274,7 +320,8 @@ class VoiceManager(
             is VoiceCommand.SendMoney,
             is VoiceCommand.ConfirmPayment,
             is VoiceCommand.CheckBalance,
-            is VoiceCommand.ClearHistory -> true
+            is VoiceCommand.ClearHistory,
+            is VoiceCommand.ResetVoice -> true
             else -> false
         }
     }

@@ -55,6 +55,7 @@ dependencies {
     // Voice Biometrics & Security
     implementation(libs.onnxruntime)
     implementation(libs.securityCrypto)
+    implementation(libs.androidx.biometric)
 
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)

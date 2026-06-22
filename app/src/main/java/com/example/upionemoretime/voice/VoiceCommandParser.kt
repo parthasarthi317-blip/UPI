@@ -156,6 +156,14 @@ object VoiceCommandParser {
             return VoiceCommand.OpenStatistics
         }
         if (
+            "reset voice" in command ||
+            "delete voice" in command ||
+            "remove voice" in command ||
+            "clear voice" in command
+        ) {
+            return VoiceCommand.ResetVoice
+        }
+        if (
             "clear history" in command ||
             "delete history" in command ||
             "remove history" in command

@@ -35,4 +35,5 @@ sealed class VoiceCommand {
     ) : VoiceCommand()
     data object Unknown : VoiceCommand()
     data object OpenStatistics : VoiceCommand()
+    data object ResetVoice : VoiceCommand()
 }

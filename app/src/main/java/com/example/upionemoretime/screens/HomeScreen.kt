@@ -253,7 +253,7 @@ fun VoiceAssistantSection(
                 },
                 style = MaterialTheme.typography.bodyMedium,
                 color = when (voiceState) {
-                    VoiceState.LISTENING, VoiceState.ENROLLING, VoiceState.ENROLLING_VOICE, 
+                    VoiceState.LISTENING, VoiceState.ENROLLING, VoiceState.ENROLLING_VOICE,
                     VoiceState.AUTHENTICATING, VoiceState.AUTHENTICATING_VOICE -> SecondaryEmerald
                     VoiceState.UNAUTHORIZED -> ErrorRose
                     else -> TextSecondary

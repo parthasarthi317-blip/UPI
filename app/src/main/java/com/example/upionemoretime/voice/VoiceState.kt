@@ -14,5 +14,6 @@ enum class VoiceState {
     ENROLLING_VOICE,     // Phase 2: Voice print capture
     AUTHENTICATING,      // Phase 1: Text verification
     AUTHENTICATING_VOICE, // Phase 2: Voice print capture
+    AUTHENTICATING_FINGERPRINT, // Phase 3: Fingerprint authentication
     UNAUTHORIZED
 }
