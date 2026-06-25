@@ -33,7 +33,11 @@ sealed class VoiceCommand {
     data class SelectRechargePlan(
         val amount: Int
     ) : VoiceCommand()
+    data class SetAmount(
+        val amount: Int
+    ) : VoiceCommand()
     data object Unknown : VoiceCommand()
     data object OpenStatistics : VoiceCommand()
+    data object ScanQR : VoiceCommand()
     data object ResetVoice : VoiceCommand()
 }

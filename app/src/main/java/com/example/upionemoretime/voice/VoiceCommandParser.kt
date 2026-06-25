@@ -156,6 +156,25 @@ object VoiceCommandParser {
             return VoiceCommand.OpenStatistics
         }
         if (
+            "set amount" in command ||
+            "amount" in command && Regex("\\d+").containsMatchIn(command)
+        ) {
+            val amount = Regex("\\d+").find(command)?.value?.toIntOrNull()
+            if (amount != null) {
+                return VoiceCommand.SetAmount(amount)
+            }
+        }
+
+        if (
+            "scan qr" in command ||
+            "open scanner" in command ||
+            "pay via qr" in command ||
+            "scan and pay" in command ||
+            "open camera" in command
+        ) {
+            return VoiceCommand.ScanQR
+        }
+        if (
             "reset voice" in command ||
             "delete voice" in command ||
             "remove voice" in command ||

@@ -117,34 +117,45 @@ paddingValues ->
             
             Row(modifier = Modifier.fillMaxWidth()) {
                 QuickActionChip(
-                    title = "Send",
-                    icon = Icons.Default.Send,
-                    onClick = { navController.navigate(Routes.paymentRoute(0, "Receiver")) },
+                    title = "Scan QR",
+                    icon = Icons.Default.QrCodeScanner,
+                    onClick = { navController.navigate(Routes.SCAN_QR) },
                     modifier = Modifier.weight(1f)
                 )
                 Spacer(modifier = Modifier.width(16.dp))
                 QuickActionChip(
-                    title = "Recharge",
-                    icon = Icons.Default.Smartphone,
-                    onClick = { navController.navigate(Routes.RECHARGE) },
+                    title = "Send",
+                    icon = Icons.Default.Send,
+                    onClick = { navController.navigate(Routes.paymentRoute(0, "Receiver")) },
                     modifier = Modifier.weight(1f)
                 )
             }
             Spacer(modifier = Modifier.height(16.dp))
             Row(modifier = Modifier.fillMaxWidth()) {
                 QuickActionChip(
+                    title = "Recharge",
+                    icon = Icons.Default.Smartphone,
+                    onClick = { navController.navigate(Routes.RECHARGE) },
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(16.dp))
+                QuickActionChip(
                     title = "History",
                     icon = Icons.Default.History,
                     onClick = { navController.navigate(Routes.HISTORY) },
                     modifier = Modifier.weight(1f)
                 )
-                Spacer(modifier = Modifier.width(16.dp))
+            }
+            Spacer(modifier = Modifier.height(16.dp))
+            Row(modifier = Modifier.fillMaxWidth()) {
                 QuickActionChip(
                     title = "Stats",
                     icon = Icons.Default.BarChart,
                     onClick = { navController.navigate(Routes.STATS) },
                     modifier = Modifier.weight(1f)
                 )
+                Spacer(modifier = Modifier.width(16.dp))
+                Box(modifier = Modifier.weight(1f))
             }
 
             Spacer(modifier = Modifier.height(32.dp))

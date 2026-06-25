@@ -35,6 +35,16 @@ fun RechargeScreen(
     var rechargeAmount by remember { mutableStateOf(if (initialAmount == 0) "" else initialAmount.toString()) }
     var showConfirmation by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        voiceManager.authenticatedCommands.collect { command ->
+            if (command == VoiceCommand.ConfirmRecharge) {
+                TransactionHistoryStore.rechargeHistory.add("₹$rechargeAmount -> $mobileNumber")
+                rechargeSuccess = true
+                showConfirmation = false
+            }
+        }
+    }
+
     Scaffold(
         containerColor = Obsidian,
         topBar = {
@@ -78,9 +88,7 @@ fun RechargeScreen(
                             mobileNumber = mobileNumber,
                             rechargeAmount = rechargeAmount,
                             onConfirm = {
-                                TransactionHistoryStore.rechargeHistory.add("₹$rechargeAmount -> $mobileNumber")
-                                rechargeSuccess = true
-                                showConfirmation = false
+                                voiceManager.triggerSensitiveCommand(VoiceCommand.ConfirmRecharge)
                             }
                         )
                     }

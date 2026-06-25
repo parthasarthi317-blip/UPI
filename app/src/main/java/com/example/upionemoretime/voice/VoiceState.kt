@@ -4,6 +4,7 @@ enum class VoiceState {
     IDLE,
     WAKING,         // Listening for "Hey Assistant"
     PROMPTING,      // Speaking "How can I help you?" or "I didn't catch that"
+    PROMPTING_SILENT, // Just finished a speak() and needs to listen without a full help prompt
     LISTENING,      // Active command listening
     PROCESSING,     // Parsing the voice input
     RESPONDING,     // Speaking the result of a command

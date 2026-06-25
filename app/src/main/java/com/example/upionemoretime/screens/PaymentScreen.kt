@@ -3,6 +3,7 @@ package com.example.upionemoretime.screens
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.CheckCircle
@@ -13,6 +14,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -31,6 +33,38 @@ fun PaymentScreen(
 ) {
     var paymentSuccess by remember { mutableStateOf(false) }
     var paymentMessage by remember { mutableStateOf("") }
+    var editableAmount by remember { mutableStateOf(if (amount > 0) amount.toString() else "") }
+
+    LaunchedEffect(Unit) {
+        if (amount <= 0) {
+            voiceManager.speak("How much money do you want to pay?", startListeningAfter = true)
+        }
+        
+        voiceManager.authenticatedCommands.collect { command ->
+            when (command) {
+                is VoiceCommand.ConfirmPayment -> {
+                    val finalAmount = editableAmount.toIntOrNull() ?: 0
+                    if (finalAmount > 0) {
+                        if (BalanceStore.balance.value >= finalAmount) {
+                            BalanceStore.balance.value -= finalAmount
+                            TransactionHistoryStore.paymentHistory.add("₹$finalAmount -> $receiver")
+                            paymentSuccess = true
+                        } else {
+                            voiceManager.speak("Insufficient balance")
+                            paymentMessage = "Insufficient Balance"
+                        }
+                    } else {
+                        voiceManager.speak("Please specify a valid amount first.")
+                    }
+                }
+                is VoiceCommand.SetAmount -> {
+                    editableAmount = command.amount.toString()
+                    voiceManager.speak("Setting amount to ${command.amount} rupees. You can now confirm the payment.")
+                }
+                else -> {}
+            }
+        }
+    }
 
     Scaffold(
         containerColor = Obsidian,
@@ -48,23 +82,17 @@ fun PaymentScreen(
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (paymentSuccess) {
-                PaymentSuccessState(amount, receiver) {
+                PaymentSuccessState(editableAmount.toIntOrNull() ?: 0, receiver) {
                     navController.navigate(Routes.HOME) { popUpTo(0) }
                 }
             } else {
                 PaymentConfirmationState(
-                    amount = amount,
+                    amount = editableAmount,
+                    onAmountChange = { editableAmount = it },
                     receiver = receiver,
                     paymentMessage = paymentMessage,
                     onConfirm = {
-                        if (BalanceStore.balance.value >= amount) {
-                            BalanceStore.balance.value -= amount
-                            TransactionHistoryStore.paymentHistory.add("₹$amount -> $receiver")
-                            paymentSuccess = true
-                        } else {
-                            voiceManager.speak("Insufficient balance")
-                            paymentMessage = "Insufficient Balance"
-                        }
+                        voiceManager.triggerSensitiveCommand(VoiceCommand.ConfirmPayment)
                     }
                 )
             }
@@ -111,7 +139,8 @@ fun PaymentSuccessState(amount: Int, receiver: String, onHomeClick: () -> Unit) 
 
 @Composable
 fun PaymentConfirmationState(
-    amount: Int,
+    amount: String,
+    onAmountChange: (String) -> Unit,
     receiver: String,
     paymentMessage: String,
     onConfirm: () -> Unit
@@ -140,11 +169,33 @@ fun PaymentConfirmationState(
                 style = MaterialTheme.typography.labelSmall,
                 color = TextSecondary
             )
-            Text(
-                text = "₹$amount",
-                style = MaterialTheme.typography.headlineLarge,
-                color = PrimaryIndigo,
-                fontWeight = FontWeight.ExtraBold
+            
+            OutlinedTextField(
+                value = amount,
+                onValueChange = onAmountChange,
+                textStyle = MaterialTheme.typography.headlineLarge.copy(
+                    color = PrimaryIndigo,
+                    fontWeight = FontWeight.ExtraBold
+                ),
+                modifier = Modifier.fillMaxWidth(),
+                prefix = { 
+                    Text(
+                        "₹", 
+                        style = MaterialTheme.typography.headlineLarge.copy(
+                            color = PrimaryIndigo,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    ) 
+                },
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = Color.Transparent,
+                    unfocusedBorderColor = Color.Transparent,
+                    cursorColor = PrimaryIndigo,
+                    focusedTextColor = PrimaryIndigo,
+                    unfocusedTextColor = PrimaryIndigo
+                ),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                singleLine = true
             )
         }
 

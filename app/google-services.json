@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "386755239435",
+    "project_id": "otpauthentication-12aad",
+    "storage_bucket": "otpauthentication-12aad.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:386755239435:android:7d9e1c1e358253a6b9310e",
+        "android_client_info": {
+          "package_name": "com.example.upionemoretime"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyC9NRBCNtSSxRVUzrRpKzkFGtrTJ2SZ_-I"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

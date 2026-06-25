@@ -115,11 +115,25 @@ object VoiceNavigationHandler {
                     launchSingleTop = true
                 }
             }
+            VoiceCommand.ScanQR -> {
+                ttsManager?.speak("Opening camera to scan QR code")
+                navController.navigate(Routes.SCAN_QR) {
+                    launchSingleTop = true
+                }
+            }
             VoiceCommand.ConfirmPayment -> {
-                // Will be handled inside PaymentScreen
+                // Handled via authenticatedCommands flow in PaymentScreen
             }
             VoiceCommand.CancelPayment -> {
-                // Will be handled inside PaymentScreen
+                ttsManager?.speak("Cancelling payment")
+                navController.popBackStack()
+            }
+            VoiceCommand.ConfirmRecharge -> {
+                // Handled via authenticatedCommands flow in RechargeScreen
+            }
+            VoiceCommand.CancelRecharge -> {
+                ttsManager?.speak("Cancelling recharge")
+                navController.popBackStack()
             }
 
             VoiceCommand.Unknown -> {}

@@ -10,12 +10,23 @@ import androidx.navigation.NavController
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import com.example.upionemoretime.voice.biometrics.VoiceBiometricManager
 import com.example.upionemoretime.voice.biometrics.FingerprintAuthManager
 
 class VoiceManager(
     private val context: Context
 ) {
+
+    private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
+    private val _authenticatedCommands = MutableSharedFlow<VoiceCommand>(extraBufferCapacity = 1)
+    val authenticatedCommands = _authenticatedCommands.asSharedFlow()
 
     private val speechManager = SpeechRecognitionManager(context)
     private val ttsManager = TextToSpeechManager(context)
@@ -55,6 +66,9 @@ class VoiceManager(
                     }
                     VoiceState.RESPONDING -> {
                         retryCount = 0 
+                        transitionTo(VoiceState.LISTENING)
+                    }
+                    VoiceState.PROMPTING_SILENT -> {
                         transitionTo(VoiceState.LISTENING)
                     }
                     VoiceState.CLOSING -> {
@@ -102,7 +116,7 @@ class VoiceManager(
                     }
                 }
             }
-            VoiceState.PROMPTING, VoiceState.RESPONDING, VoiceState.CLOSING -> {
+            VoiceState.PROMPTING, VoiceState.PROMPTING_SILENT, VoiceState.RESPONDING, VoiceState.CLOSING -> {
                 wakeWordManager.stopListening()
                 followUpSessionManager.stopTimeout()
             }
@@ -223,6 +237,7 @@ class VoiceManager(
                     val command = pendingCommand
                     pendingCommand = null
                     if (command != null) {
+                        scope.launch { _authenticatedCommands.emit(command) }
                         transitionTo(VoiceState.RESPONDING)
                         if (command == VoiceCommand.ResetVoice) {
                             resetVoiceData()
@@ -319,6 +334,8 @@ class VoiceManager(
         return when (command) {
             is VoiceCommand.SendMoney,
             is VoiceCommand.ConfirmPayment,
+            is VoiceCommand.RechargeMobile,
+            is VoiceCommand.ConfirmRecharge,
             is VoiceCommand.CheckBalance,
             is VoiceCommand.ClearHistory,
             is VoiceCommand.ResetVoice -> true
@@ -403,7 +420,23 @@ class VoiceManager(
         ttsManager.speak("Listening")
     }
 
-    fun speak(text: String) {
+    fun triggerSensitiveCommand(command: VoiceCommand) {
+        pendingCommand = command
+        verificationChallenge = generateRandomChallenge()
+        if (!biometricManager.isUserEnrolled()) {
+            transitionTo(VoiceState.ENROLLING)
+            biometricManager.startEnrollment()
+            ttsManager.speak("I need to learn your voice first. Please repeat this phrase: $verificationChallenge")
+        } else {
+            transitionTo(VoiceState.AUTHENTICATING)
+            ttsManager.speak("To verify it's you, please say: $verificationChallenge")
+        }
+    }
+
+    fun speak(text: String, startListeningAfter: Boolean = false) {
+        if (startListeningAfter) {
+            transitionTo(VoiceState.PROMPTING_SILENT)
+        }
         ttsManager.speak(text)
     }
 
