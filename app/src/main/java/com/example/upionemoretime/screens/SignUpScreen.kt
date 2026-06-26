@@ -12,26 +12,44 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.upionemoretime.navigation.Routes
 import com.example.upionemoretime.ui.theme.*
+import com.example.upionemoretime.voice.VoiceManager
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun SignUpScreen(navController: NavController) {
+fun SignUpScreen(navController: NavController, voiceManager: VoiceManager) {
     var name by remember { mutableStateOf("") }
     var mobileNumber by remember { mutableStateOf("") }
     var email by remember { mutableStateOf("") }
-    var age by remember { mutableStateOf("") }
-    var country by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+    var confirmPassword by remember { mutableStateOf("") }
 
     val isFormValid = name.isNotBlank() && 
                       mobileNumber.length == 10 && 
-                      email.contains("@") && 
-                      age.isNotBlank() && 
-                      country.isNotBlank()
+                      email.contains("@") &&
+                      password.isNotBlank() &&
+                      password == confirmPassword
+
+    // Register UI listeners with VoiceManager
+    LaunchedEffect(Unit) {
+        voiceManager.setSignupListeners(
+            onNameUpdate = { name = it },
+            onMobileUpdate = { mobileNumber = it },
+            onEmailUpdate = { email = it },
+            onPasswordUpdate = { password = it },
+            onConfirmPasswordUpdate = { confirmPassword = it },
+            onActionTrigger = {
+                if (isFormValid) {
+                    navController.navigate(Routes.otpRoute(mobileNumber, false))
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Obsidian
@@ -74,16 +92,23 @@ fun SignUpScreen(navController: NavController) {
             
             SignUpTextField(value = email, onValueChange = { email = it }, label = "Email ID", keyboardType = KeyboardType.Email)
             Spacer(modifier = Modifier.height(16.dp))
-            
-            Row(modifier = Modifier.fillMaxWidth()) {
-                Box(modifier = Modifier.weight(1f)) {
-                    SignUpTextField(value = age, onValueChange = { age = it }, label = "Age", keyboardType = KeyboardType.Number)
-                }
-                Spacer(modifier = Modifier.width(16.dp))
-                Box(modifier = Modifier.weight(2f)) {
-                    SignUpTextField(value = country, onValueChange = { country = it }, label = "Country")
-                }
-            }
+
+            SignUpTextField(
+                value = password, 
+                onValueChange = { password = it }, 
+                label = "Password", 
+                keyboardType = KeyboardType.Password,
+                isPassword = true
+            )
+            Spacer(modifier = Modifier.height(16.dp))
+
+            SignUpTextField(
+                value = confirmPassword, 
+                onValueChange = { confirmPassword = it }, 
+                label = "Confirm Password", 
+                keyboardType = KeyboardType.Password,
+                isPassword = true
+            )
 
             Spacer(modifier = Modifier.height(32.dp))
 
@@ -119,7 +144,8 @@ fun SignUpTextField(
     value: String,
     onValueChange: (String) -> Unit,
     label: String,
-    keyboardType: KeyboardType = KeyboardType.Text
+    keyboardType: KeyboardType = KeyboardType.Text,
+    isPassword: Boolean = false
 ) {
     OutlinedTextField(
         value = value,
@@ -127,6 +153,7 @@ fun SignUpTextField(
         label = { Text(label, color = TextSecondary) },
         modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
+        visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
             focusedBorderColor = PrimaryIndigo,

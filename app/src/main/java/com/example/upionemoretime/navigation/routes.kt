@@ -32,6 +32,7 @@ object Routes {
     
     const val LOGIN = "login"
     const val SIGNUP = "signup"
+    const val VOICE_ENROLLMENT = "voice_enrollment"
     const val OTP_VERIFICATION = "otp_verification/{mobileNumber}/{isLogin}"
     
     fun otpRoute(mobileNumber: String, isLogin: Boolean): String {

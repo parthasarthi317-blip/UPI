@@ -16,6 +16,7 @@ import com.example.upionemoretime.screens.ScanQRScreen
 import com.example.upionemoretime.screens.LoginScreen
 import com.example.upionemoretime.screens.SignUpScreen
 import com.example.upionemoretime.screens.OtpVerificationScreen
+import com.example.upionemoretime.screens.VoiceEnrollmentScreen
 import com.example.upionemoretime.voice.VoiceManager
 
 @Composable
@@ -29,14 +30,18 @@ fun AppNavigation(voiceManager: VoiceManager) {
 
     NavHost(
         navController = navController,
-        startDestination = Routes.LOGIN
+        startDestination = Routes.SIGNUP
     ) {
         composable(Routes.LOGIN) {
-            LoginScreen(navController)
+            LoginScreen(navController, voiceManager)
         }
 
         composable(Routes.SIGNUP) {
-            SignUpScreen(navController)
+            SignUpScreen(navController, voiceManager)
+        }
+
+        composable(Routes.VOICE_ENROLLMENT) {
+            VoiceEnrollmentScreen(navController, voiceManager)
         }
 
         composable(

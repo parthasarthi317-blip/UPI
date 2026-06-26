@@ -10,16 +10,33 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
 import com.example.upionemoretime.navigation.Routes
 import com.example.upionemoretime.ui.theme.*
+import com.example.upionemoretime.voice.VoiceManager
+import com.example.upionemoretime.voice.VoiceState
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginScreen(navController: NavController) {
+fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
     var mobileNumber by remember { mutableStateOf("") }
+    var password by remember { mutableStateOf("") }
+
+    // Register UI listeners with VoiceManager
+    LaunchedEffect(Unit) {
+        voiceManager.setLoginListeners(
+            onMobileUpdate = { mobileNumber = it },
+            onPasswordUpdate = { password = it },
+            onActionTrigger = {
+                if (mobileNumber.length == 10) {
+                    navController.navigate(Routes.otpRoute(mobileNumber, true))
+                }
+            }
+        )
+    }
 
     Scaffold(
         containerColor = Obsidian
@@ -54,6 +71,24 @@ fun LoginScreen(navController: NavController) {
                 label = { Text("Mobile Number", color = TextSecondary) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
+                singleLine = true,
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = PrimaryIndigo,
+                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
+                    focusedTextColor = TextPrimary,
+                    unfocusedTextColor = TextPrimary
+                )
+            )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            OutlinedTextField(
+                value = password,
+                onValueChange = { password = it },
+                label = { Text("Password", color = TextSecondary) },
+                modifier = Modifier.fillMaxWidth(),
+                visualTransformation = PasswordVisualTransformation(),
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = PrimaryIndigo,

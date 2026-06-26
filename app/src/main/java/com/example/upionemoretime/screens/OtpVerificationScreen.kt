@@ -86,6 +86,16 @@ fun OtpVerificationScreen(
 
     LaunchedEffect(Unit) {
         startVerification()
+        voiceManager.setOtpListeners(
+            onOtpUpdate = { otpValue = it },
+            onActionTrigger = {
+                if (otpValue.length == 6 && verificationId.isNotEmpty()) {
+                    isVerifying = true
+                    val credential = PhoneAuthProvider.getCredential(verificationId, otpValue)
+                    signInWithPhoneAuthCredential(credential, auth, navController, voiceManager)
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -179,8 +189,16 @@ private fun signInWithPhoneAuthCredential(
         .addOnCompleteListener { task ->
             if (task.isSuccessful) {
                 voiceManager.speak("Verification successful.")
-                navController.navigate(Routes.HOME) {
-                    popUpTo(Routes.LOGIN) { inclusive = true }
+                
+                // Redirection Logic: If voice is not registered, go to enrollment.
+                if (!voiceManager.isUserEnrolled()) {
+                    navController.navigate(Routes.VOICE_ENROLLMENT) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
+                } else {
+                    navController.navigate(Routes.HOME) {
+                        popUpTo(Routes.LOGIN) { inclusive = true }
+                    }
                 }
             } else {
                 voiceManager.speak("Verification failed.")

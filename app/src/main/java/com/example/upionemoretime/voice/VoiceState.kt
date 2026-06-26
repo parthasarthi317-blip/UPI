@@ -16,5 +16,24 @@ enum class VoiceState {
     AUTHENTICATING,      // Phase 1: Text verification
     AUTHENTICATING_VOICE, // Phase 2: Voice print capture
     AUTHENTICATING_FINGERPRINT, // Phase 3: Fingerprint authentication
-    UNAUTHORIZED
+    UNAUTHORIZED,
+
+    // Login Flow States
+    LOGIN_MOBILE,
+    LOGIN_PASSWORD,
+    LOGIN_CONFIRM,
+    
+    // Signup Flow States
+    ONBOARDING_CHECK,
+    SIGNUP_NAME,
+    SIGNUP_NAME_CONFIRM,
+    SIGNUP_MOBILE,
+    SIGNUP_EMAIL,
+    SIGNUP_PASSWORD,
+    SIGNUP_CONFIRM_PASSWORD,
+    SIGNUP_CONFIRM_FINAL,
+
+    // OTP Flow States
+    OTP_INPUT,
+    OTP_CONFIRM
 }

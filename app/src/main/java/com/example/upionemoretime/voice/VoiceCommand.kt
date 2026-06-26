@@ -3,8 +3,6 @@ package com.example.upionemoretime.voice
 sealed class VoiceCommand {
 
     data object CheckBalance : VoiceCommand()
-
-
     data object OpenRecharge : VoiceCommand()
     data object OpenSettings : VoiceCommand()
     data object OpenPayment : VoiceCommand()
@@ -40,4 +38,11 @@ sealed class VoiceCommand {
     data object OpenStatistics : VoiceCommand()
     data object ScanQR : VoiceCommand()
     data object ResetVoice : VoiceCommand()
+
+    // Login & Signup Commands
+    data object Yes : VoiceCommand()
+    data object No : VoiceCommand()
+    data class DataInput(val text: String) : VoiceCommand()
+    data object StartLogin : VoiceCommand()
+    data object StartSignup : VoiceCommand()
 }
