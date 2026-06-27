@@ -26,18 +26,19 @@ import com.example.upionemoretime.ui.theme.*
 fun PremiumCard(
     modifier: Modifier = Modifier,
     gradient: List<Color>? = null,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
     content: @Composable ColumnScope.() -> Unit
 ) {
     val backgroundModifier = if (gradient != null) {
         Modifier.background(Brush.linearGradient(gradient))
     } else {
-        Modifier.background(MaterialTheme.colorScheme.surfaceVariant)
+        Modifier.background(containerColor)
     }
 
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .border(0.5.dp, Color.White.copy(alpha = 0.1f), RoundedCornerShape(24.dp)),
+            .border(0.5.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f), RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.Transparent),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -56,13 +57,15 @@ fun QuickActionChip(
     title: String,
     icon: ImageVector,
     onClick: () -> Unit,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    containerColor: Color = MaterialTheme.colorScheme.surfaceVariant,
+    contentColor: Color = MaterialTheme.colorScheme.primary
 ) {
     Box(
         modifier = modifier
             .aspectRatio(1f)
             .clip(RoundedCornerShape(24.dp))
-            .background(CardSurface)
+            .background(containerColor)
             .clickable { onClick() }
             .padding(16.dp),
         contentAlignment = Alignment.Center
@@ -74,14 +77,14 @@ fun QuickActionChip(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = PrimaryIndigo,
+                tint = contentColor,
                 modifier = Modifier.size(32.dp)
             )
             Spacer(modifier = Modifier.height(12.dp))
             Text(
                 text = title,
                 style = MaterialTheme.typography.labelSmall,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onSurface,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -91,12 +94,13 @@ fun QuickActionChip(
 @Composable
 fun SectionHeader(
     title: String,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    textColor: Color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
 ) {
     Text(
         text = title.uppercase(),
         style = MaterialTheme.typography.labelSmall,
-        color = TextSecondary,
+        color = textColor,
         fontWeight = FontWeight.ExtraBold,
         modifier = modifier.padding(vertical = 12.dp)
     )

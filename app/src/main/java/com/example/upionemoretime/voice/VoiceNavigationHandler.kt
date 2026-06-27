@@ -24,6 +24,9 @@ object VoiceNavigationHandler {
                 }
             }
 
+            VoiceCommand.RevealBalance -> {
+                ttsManager?.speak("Balance is now visible on home screen")
+            }
             VoiceCommand.OpenRecharge -> {
                 ttsManager?.speak(
                     "Opening recharge screen"

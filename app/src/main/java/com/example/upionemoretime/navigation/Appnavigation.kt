@@ -20,7 +20,11 @@ import com.example.upionemoretime.screens.VoiceEnrollmentScreen
 import com.example.upionemoretime.voice.VoiceManager
 
 @Composable
-fun AppNavigation(voiceManager: VoiceManager) {
+fun AppNavigation(
+    voiceManager: VoiceManager,
+    isDarkMode: Boolean,
+    onDarkModeChange: (Boolean) -> Unit
+) {
 
     val navController = rememberNavController()
 
@@ -63,7 +67,9 @@ fun AppNavigation(voiceManager: VoiceManager) {
         composable(Routes.HOME) {
             HomeScreen(
                 navController = navController,
-                voiceManager = voiceManager
+                voiceManager = voiceManager,
+                isDarkMode = isDarkMode,
+                onDarkModeChange = onDarkModeChange
             )
         }
 

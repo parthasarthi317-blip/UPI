@@ -45,14 +45,17 @@ fun SignUpScreen(navController: NavController, voiceManager: VoiceManager) {
             onConfirmPasswordUpdate = { confirmPassword = it },
             onActionTrigger = {
                 if (isFormValid) {
+                    voiceManager.setUserName(name)
                     navController.navigate(Routes.otpRoute(mobileNumber, false))
                 }
             }
         )
     }
 
+    val isHindi = voiceManager.isHindi()
+
     Scaffold(
-        containerColor = Obsidian
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -65,55 +68,58 @@ fun SignUpScreen(navController: NavController, voiceManager: VoiceManager) {
             Spacer(modifier = Modifier.height(48.dp))
             
             Text(
-                text = "Create Account",
+                text = if (isHindi) "खाता बनाएं" else "Create Account",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
             
             Text(
-                text = "Enter your details to get started",
+                text = if (isHindi) "शुरू करने के लिए अपना विवरण दर्ज करें" else "Enter your details to get started",
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
-            SignUpTextField(value = name, onValueChange = { name = it }, label = "Full Name")
+            SignUpTextField(value = name, onValueChange = { name = it }, label = if (isHindi) "पूरा नाम" else "Full Name", voiceManager = voiceManager)
             Spacer(modifier = Modifier.height(16.dp))
             
             SignUpTextField(
                 value = mobileNumber, 
                 onValueChange = { if (it.length <= 10) mobileNumber = it }, 
-                label = "Mobile Number",
-                keyboardType = KeyboardType.Phone
+                label = if (isHindi) "मोबाइल नंबर" else "Mobile Number",
+                keyboardType = KeyboardType.Phone,
+                voiceManager = voiceManager
             )
             Spacer(modifier = Modifier.height(16.dp))
             
-            SignUpTextField(value = email, onValueChange = { email = it }, label = "Email ID", keyboardType = KeyboardType.Email)
+            SignUpTextField(value = email, onValueChange = { email = it }, label = if (isHindi) "ईमेल आईडी" else "Email ID", keyboardType = KeyboardType.Email, voiceManager = voiceManager)
             Spacer(modifier = Modifier.height(16.dp))
 
             SignUpTextField(
                 value = password, 
                 onValueChange = { password = it }, 
-                label = "Password", 
+                label = if (isHindi) "पासवर्ड" else "Password",
                 keyboardType = KeyboardType.Password,
-                isPassword = true
+                isPassword = true,
+                voiceManager = voiceManager
             )
             Spacer(modifier = Modifier.height(16.dp))
 
             SignUpTextField(
                 value = confirmPassword, 
                 onValueChange = { confirmPassword = it }, 
-                label = "Confirm Password", 
+                label = if (isHindi) "पासवर्ड की पुष्टि करें" else "Confirm Password",
                 keyboardType = KeyboardType.Password,
-                isPassword = true
+                isPassword = true,
+                voiceManager = voiceManager
             )
 
             Spacer(modifier = Modifier.height(32.dp))
 
             TextButton(onClick = { navController.navigate(Routes.LOGIN) }) {
-                Text("Already have an account? Login", color = PrimaryIndigo)
+                Text(if (isHindi) "पहले से ही एक खाता है? लॉगिन करें" else "Already have an account? Login", color = MaterialTheme.colorScheme.primary)
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -121,6 +127,7 @@ fun SignUpScreen(navController: NavController, voiceManager: VoiceManager) {
             Button(
                 onClick = { 
                     if (isFormValid) {
+                        voiceManager.setUserName(name)
                         navController.navigate(Routes.otpRoute(mobileNumber, false))
                     }
                 },
@@ -128,10 +135,10 @@ fun SignUpScreen(navController: NavController, voiceManager: VoiceManager) {
                     .fillMaxWidth(0.6f)
                     .height(56.dp),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 enabled = isFormValid
             ) {
-                Text("Next", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(if (isHindi) "अगला" else "Next", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
             
             Spacer(modifier = Modifier.height(32.dp))
@@ -145,21 +152,22 @@ fun SignUpTextField(
     onValueChange: (String) -> Unit,
     label: String,
     keyboardType: KeyboardType = KeyboardType.Text,
-    isPassword: Boolean = false
+    isPassword: Boolean = false,
+    voiceManager: VoiceManager
 ) {
     OutlinedTextField(
         value = value,
         onValueChange = onValueChange,
-        label = { Text(label, color = TextSecondary) },
+        label = { Text(label, color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)) },
         modifier = Modifier.fillMaxWidth(),
         keyboardOptions = KeyboardOptions(keyboardType = keyboardType),
         visualTransformation = if (isPassword) PasswordVisualTransformation() else androidx.compose.ui.text.input.VisualTransformation.None,
         singleLine = true,
         colors = OutlinedTextFieldDefaults.colors(
-            focusedBorderColor = PrimaryIndigo,
-            unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-            focusedTextColor = TextPrimary,
-            unfocusedTextColor = TextPrimary
+            focusedBorderColor = MaterialTheme.colorScheme.primary,
+            unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+            focusedTextColor = MaterialTheme.colorScheme.onBackground,
+            unfocusedTextColor = MaterialTheme.colorScheme.onBackground
         )
     )
 }

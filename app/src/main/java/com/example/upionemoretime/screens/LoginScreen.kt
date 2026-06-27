@@ -38,8 +38,10 @@ fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
         )
     }
 
+    val isHindi = voiceManager.isHindi()
+
     Scaffold(
-        containerColor = Obsidian
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -51,16 +53,16 @@ fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
             Spacer(modifier = Modifier.height(64.dp))
             
             Text(
-                text = "Welcome Back",
+                text = if (isHindi) "वापसी पर स्वागत है" else "Welcome Back",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
             
             Text(
-                text = "Login to your account",
+                text = if (isHindi) "अपने खाते में लॉगिन करें" else "Login to your account",
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -68,15 +70,15 @@ fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
             OutlinedTextField(
                 value = mobileNumber,
                 onValueChange = { if (it.length <= 10) mobileNumber = it },
-                label = { Text("Mobile Number", color = TextSecondary) },
+                label = { Text(if (isHindi) "मोबाइल नंबर" else "Mobile Number", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Phone),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryIndigo,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 )
             )
 
@@ -85,23 +87,26 @@ fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
             OutlinedTextField(
                 value = password,
                 onValueChange = { password = it },
-                label = { Text("Password", color = TextSecondary) },
+                label = { Text(if (isHindi) "पासवर्ड" else "Password", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)) },
                 modifier = Modifier.fillMaxWidth(),
                 visualTransformation = PasswordVisualTransformation(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryIndigo,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 )
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
             TextButton(onClick = { navController.navigate(Routes.SIGNUP) }) {
-                Text("Don't have an account? Sign Up", color = PrimaryIndigo)
+                Text(
+                    text = if (isHindi) "खाता नहीं है? साइन अप करें" else "Don't have an account? Sign Up",
+                    color = MaterialTheme.colorScheme.primary
+                )
             }
 
             Spacer(modifier = Modifier.weight(1f))
@@ -116,10 +121,10 @@ fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
                     .fillMaxWidth(0.6f)
                     .height(56.dp),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary),
                 enabled = mobileNumber.length == 10
             ) {
-                Text("Next", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                Text(if (isHindi) "आगे बढ़ें" else "Next", fontWeight = FontWeight.Bold, fontSize = 18.sp)
             }
             
             Spacer(modifier = Modifier.height(32.dp))

@@ -22,6 +22,8 @@ class FingerprintAuthManager(private val context: Context) {
 
     fun authenticate(
         activity: FragmentActivity,
+        title: String = "Fingerprint Verification",
+        subtitle: String = "Confirm your identity to proceed",
         onSuccess: () -> Unit,
         onFailure: (String) -> Unit
     ) {
@@ -49,8 +51,8 @@ class FingerprintAuthManager(private val context: Context) {
             })
 
         val promptInfo = BiometricPrompt.PromptInfo.Builder()
-            .setTitle("Fingerprint Verification")
-            .setSubtitle("Confirm your identity to proceed")
+            .setTitle(title)
+            .setSubtitle(subtitle)
             .setNegativeButtonText("Cancel")
             .setAllowedAuthenticators(BIOMETRIC_STRONG)
             .build()

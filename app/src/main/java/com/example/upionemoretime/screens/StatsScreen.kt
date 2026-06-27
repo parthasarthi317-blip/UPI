@@ -24,15 +24,26 @@ import com.example.upionemoretime.voice.TransactionHistoryStore
 fun StatsScreen(navController: NavController, voiceManager: VoiceManager) {
     val paymentCount = TransactionHistoryStore.paymentHistory.size
     val rechargeCount = TransactionHistoryStore.rechargeHistory.size
+    val isHindi = voiceManager.isHindi()
 
     Scaffold(
-        containerColor = Obsidian,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Analytics", style = MaterialTheme.typography.titleLarge) },
+                title = { 
+                    Text(
+                        if (isHindi) "एनालिटिक्स" else "Analytics", 
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = TextPrimary)
+                        Icon(
+                            Icons.Default.ArrowBack, 
+                            contentDescription = null, 
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -43,23 +54,37 @@ fun StatsScreen(navController: NavController, voiceManager: VoiceManager) {
             modifier = Modifier.fillMaxSize().padding(paddingValues).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Default.BarChart, null, tint = PrimaryIndigo, modifier = Modifier.size(64.dp))
+            Icon(
+                Icons.Default.BarChart, 
+                null, 
+                tint = MaterialTheme.colorScheme.primary, 
+                modifier = Modifier.size(64.dp)
+            )
             Spacer(modifier = Modifier.height(32.dp))
             
             PremiumCard {
-                StatRow("Total Payments", paymentCount.toString(), PrimaryIndigo)
+                StatRow(
+                    if (isHindi) "कुल भुगतान" else "Total Payments", 
+                    paymentCount.toString(), 
+                    MaterialTheme.colorScheme.primary
+                )
                 Spacer(modifier = Modifier.height(16.dp))
-                StatRow("Total Recharges", rechargeCount.toString(), SecondaryEmerald)
+                StatRow(
+                    if (isHindi) "कुल रिचार्ज" else "Total Recharges", 
+                    rechargeCount.toString(), 
+                    MaterialTheme.colorScheme.secondary
+                )
             }
             
             Spacer(modifier = Modifier.height(32.dp))
-            SectionHeader(title = "Insights")
+            SectionHeader(title = if (isHindi) "इनसाइट्स" else "Insights")
             
             PremiumCard {
                 Text(
-                    "You've made more recharges than payments this month. Try using voice to explore more features!",
+                    if (isHindi) "आपने इस महीने भुगतान से अधिक रिचार्ज किए हैं। अधिक सुविधाओं को खोजने के लिए आवाज का उपयोग करें!"
+                    else "You've made more recharges than payments this month. Try using voice to explore more features!",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -68,9 +93,13 @@ fun StatsScreen(navController: NavController, voiceManager: VoiceManager) {
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = CardSurface)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Text("Close", fontWeight = FontWeight.Bold)
+                Text(
+                    if (isHindi) "बंद करें" else "Close", 
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
         }
     }
@@ -79,7 +108,7 @@ fun StatsScreen(navController: NavController, voiceManager: VoiceManager) {
 @Composable
 fun StatRow(label: String, value: String, color: Color) {
     Row(verticalAlignment = Alignment.CenterVertically) {
-        Text(label, style = MaterialTheme.typography.bodyLarge, color = TextSecondary)
+        Text(label, style = MaterialTheme.typography.bodyLarge, color = MaterialTheme.colorScheme.onSurfaceVariant)
         Spacer(modifier = Modifier.weight(1f))
         Text(value, style = MaterialTheme.typography.headlineMedium, color = color, fontWeight = FontWeight.Bold)
     }

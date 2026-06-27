@@ -3,6 +3,7 @@ package com.example.upionemoretime.voice
 sealed class VoiceCommand {
 
     data object CheckBalance : VoiceCommand()
+    data object RevealBalance : VoiceCommand()
     data object OpenRecharge : VoiceCommand()
     data object OpenSettings : VoiceCommand()
     data object OpenPayment : VoiceCommand()

@@ -98,8 +98,10 @@ fun OtpVerificationScreen(
         )
     }
 
+    val isHindi = voiceManager.isHindi()
+
     Scaffold(
-        containerColor = Obsidian
+        containerColor = MaterialTheme.colorScheme.background
     ) { paddingValues ->
         Column(
             modifier = Modifier
@@ -111,16 +113,16 @@ fun OtpVerificationScreen(
             Spacer(modifier = Modifier.height(64.dp))
             
             Text(
-                text = "Verify OTP",
+                text = if (isHindi) "ओटीपी सत्यापित करें" else "Verify OTP",
                 style = MaterialTheme.typography.headlineLarge,
-                color = TextPrimary,
+                color = MaterialTheme.colorScheme.onBackground,
                 fontWeight = FontWeight.Bold
             )
             
             Text(
-                text = "Code sent to $mobileNumber",
+                text = if (isHindi) "कोड $mobileNumber पर भेजा गया" else "Code sent to $mobileNumber",
                 style = MaterialTheme.typography.bodyLarge,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
             )
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -128,15 +130,15 @@ fun OtpVerificationScreen(
             OutlinedTextField(
                 value = otpValue,
                 onValueChange = { if (it.length <= 6) otpValue = it },
-                label = { Text("6-Digit OTP", color = TextSecondary) },
+                label = { Text(if (isHindi) "6-अंकों का ओटीपी" else "6-Digit OTP", color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)) },
                 modifier = Modifier.fillMaxWidth(),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.NumberPassword),
                 singleLine = true,
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = PrimaryIndigo,
-                    unfocusedBorderColor = Color.White.copy(alpha = 0.1f),
-                    focusedTextColor = TextPrimary,
-                    unfocusedTextColor = TextPrimary
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                    focusedTextColor = MaterialTheme.colorScheme.onBackground,
+                    unfocusedTextColor = MaterialTheme.colorScheme.onBackground
                 )
             )
 
@@ -147,7 +149,7 @@ fun OtpVerificationScreen(
                     startVerification(resendToken)
                 }
             }) {
-                Text("Didn't receive code? Resend", color = PrimaryIndigo)
+                Text(if (isHindi) "कोड नहीं मिला? पुनः भेजें" else "Didn't receive code? Resend", color = MaterialTheme.colorScheme.primary)
             }
 
             Spacer(modifier = Modifier.weight(1f))
@@ -164,13 +166,13 @@ fun OtpVerificationScreen(
                     .fillMaxWidth(0.6f)
                     .height(56.dp),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = SecondaryEmerald),
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary),
                 enabled = otpValue.length == 6 && !isVerifying && verificationId.isNotEmpty()
             ) {
                 if (isVerifying) {
-                    CircularProgressIndicator(color = Color.White, modifier = Modifier.size(24.dp))
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.onSecondary, modifier = Modifier.size(24.dp))
                 } else {
-                    Text("Verify & Continue", fontWeight = FontWeight.Bold, fontSize = 18.sp)
+                    Text(if (isHindi) "सत्यापित करें और जारी रखें" else "Verify & Continue", fontWeight = FontWeight.Bold, fontSize = 18.sp)
                 }
             }
             

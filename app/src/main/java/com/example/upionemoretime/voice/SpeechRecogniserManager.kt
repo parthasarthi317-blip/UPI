@@ -13,6 +13,11 @@ class SpeechRecognitionManager(
 ) {
 
     private var speechRecognizer: SpeechRecognizer? = null
+    private var currentLanguage: String = "en-US"
+
+    fun setLanguage(lang: String) {
+        currentLanguage = if (lang == "hi") "hi-IN" else "en-US"
+    }
 
     private fun ensureRecognizer() {
         if (speechRecognizer == null) {

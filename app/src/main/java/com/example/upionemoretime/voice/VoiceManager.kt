@@ -21,7 +21,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.launch
 
 class VoiceManager(
-    private val context: Context
+    val context: Context
 ) {
 
     private val scope = CoroutineScope(Dispatchers.Main + SupervisorJob())
@@ -56,6 +56,11 @@ class VoiceManager(
     private var pendingCommand: VoiceCommand? = null
     private var verificationChallenge: String = ""
 
+    private var _userName = "User"
+    private var isHindi = false
+    private var isDarkMode = true
+    private val prefs = context.getSharedPreferences("voice_prefs", Context.MODE_PRIVATE)
+
     // UI Listeners
     private var onLoginMobileUpdate: ((String) -> Unit)? = null
     private var onLoginPasswordUpdate: ((String) -> Unit)? = null
@@ -73,6 +78,11 @@ class VoiceManager(
 
     init {
         Log.d("VOICE_MANAGER", "VoiceManager Created: ${hashCode()}")
+        _userName = prefs.getString("user_name", "User") ?: "User"
+        val lang = prefs.getString("language", "en") ?: "en"
+        isHindi = lang == "hi"
+        isDarkMode = prefs.getBoolean("dark_mode", true)
+        speechManager.setLanguage(lang)
 
         ttsManager.setOnSpeechDoneListener {
             mainHandler.post {
@@ -449,7 +459,7 @@ class VoiceManager(
 
     private fun generateRandomChallenge() = listOf("My voice is my secure password", "In the digital world my voice is my key", "Secure my payments with my unique voice").random()
 
-    private fun isSensitiveCommand(command: VoiceCommand) = command in listOf(VoiceCommand.CheckBalance, VoiceCommand.ClearHistory, VoiceCommand.ResetVoice) || command is VoiceCommand.SendMoney || command is VoiceCommand.ConfirmPayment || command is VoiceCommand.RechargeMobile || command is VoiceCommand.ConfirmRecharge
+    private fun isSensitiveCommand(command: VoiceCommand) = command in listOf(VoiceCommand.CheckBalance, VoiceCommand.RevealBalance, VoiceCommand.ClearHistory, VoiceCommand.ResetVoice) || command is VoiceCommand.SendMoney || command is VoiceCommand.ConfirmPayment || command is VoiceCommand.RechargeMobile || command is VoiceCommand.ConfirmRecharge
 
     private fun handleUnknownCommand(errorType: String) {
         val isSilence = errorType.contains("TIMEOUT", ignoreCase = true) || errorType.contains("NO_MATCH", ignoreCase = true)
@@ -498,6 +508,29 @@ class VoiceManager(
     fun speak(text: String, startListeningAfter: Boolean = false) { if (startListeningAfter) transitionTo(VoiceState.PROMPTING_SILENT); ttsManager.speak(text) }
     fun resetVoiceData() { biometricManager.clearEnrollment(); ttsManager.speak("Voice data has been reset.") }
 
+    fun setUserName(name: String) {
+        _userName = name
+        prefs.edit().putString("user_name", name).apply()
+    }
+
+    fun getUserName(): String = _userName
+
+    fun isHindi(): Boolean = isHindi
+    
+    fun isDarkMode(): Boolean = isDarkMode
+
+    fun setDarkMode(enabled: Boolean) {
+        isDarkMode = enabled
+        prefs.edit().putBoolean("dark_mode", enabled).apply()
+    }
+
+    fun setLanguage(hindi: Boolean) {
+        isHindi = hindi
+        val langCode = if (hindi) "hi" else "en"
+        prefs.edit().putString("language", langCode).apply()
+        speechManager.setLanguage(langCode)
+    }
+
     fun isUserEnrolled(): Boolean = biometricManager.isUserEnrolled()
 
     fun triggerEnrollmentFlow() {
@@ -505,6 +538,20 @@ class VoiceManager(
         transitionTo(VoiceState.ENROLLING)
         biometricManager.startEnrollment()
         ttsManager.speak("I need to learn your voice print to secure your account. Please repeat this phrase clearly: $verificationChallenge")
+    }
+
+    fun requestManualBiometric(prompt: String, onAuthenticated: () -> Unit) {
+        val activity = context as? FragmentActivity ?: return
+        
+        fingerprintManager.authenticate(activity,
+            title = if (isHindi) "पहचान सत्यापित करें" else "Verify Identity",
+            subtitle = if (isHindi) "बैलेंस देखने के लिए फिंगरप्रिंट का उपयोग करें" else "Use fingerprint to see balance",
+            onSuccess = {
+                onAuthenticated()
+            },
+            onFailure = {
+            }
+        )
     }
 
     fun destroy() { transitionTo(VoiceState.IDLE); ttsManager.shutdown(); speechManager.destroy(); biometricManager.destroy() }

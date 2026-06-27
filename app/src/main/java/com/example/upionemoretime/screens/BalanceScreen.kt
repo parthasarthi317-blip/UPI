@@ -21,17 +21,22 @@ import com.example.upionemoretime.voice.VoiceManager
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun BalanceScreen(navController: NavController, voiceManager: VoiceManager) {
+    val isHindi = voiceManager.isHindi()
+    
     Scaffold(
-        containerColor = Obsidian,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("My Account", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(if (isHindi) "मेरा खाता" else "My Account", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = TextPrimary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         }
     ) { paddingValues ->
@@ -39,12 +44,12 @@ fun BalanceScreen(navController: NavController, voiceManager: VoiceManager) {
             modifier = Modifier.fillMaxSize().padding(paddingValues).padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            Icon(Icons.Default.AccountBalanceWallet, null, tint = PrimaryIndigo, modifier = Modifier.size(64.dp))
+            Icon(Icons.Default.AccountBalanceWallet, null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(64.dp))
             Spacer(modifier = Modifier.height(32.dp))
             
             PremiumCard(gradient = GradientIndigo) {
                 Text(
-                    "AVAILABLE BALANCE",
+                    if (isHindi) "उपलब्ध शेष राशि" else "AVAILABLE BALANCE",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.White.copy(alpha = 0.7f)
                 )
@@ -59,12 +64,15 @@ fun BalanceScreen(navController: NavController, voiceManager: VoiceManager) {
             Spacer(modifier = Modifier.height(32.dp))
             
             Button(
-                onClick = { voiceManager.speak("Your balance is ${BalanceStore.balance.value} rupees") },
+                onClick = { 
+                    val balance = BalanceStore.balance.value
+                    voiceManager.speak(if (isHindi) "आपका बैलेंस $balance रुपये है" else "Your balance is $balance rupees") 
+                },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = CardSurface)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant)
             ) {
-                Text("Speak Balance", fontWeight = FontWeight.Bold)
+                Text(if (isHindi) "बैलेंस बोलें" else "Speak Balance", fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
             
             Spacer(modifier = Modifier.weight(1f))
@@ -72,9 +80,9 @@ fun BalanceScreen(navController: NavController, voiceManager: VoiceManager) {
                 onClick = { navController.popBackStack() },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = CircleShape,
-                colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Back To Home", fontWeight = FontWeight.Bold)
+                Text(if (isHindi) "वापस होम पर" else "Back To Home", fontWeight = FontWeight.Bold)
             }
         }
     }

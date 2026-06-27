@@ -29,6 +29,7 @@ import com.example.upionemoretime.voice.VoiceManager
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HistoryScreen(navController: NavController, voiceManager: VoiceManager) {
+    val isHindi = voiceManager.isHindi()
     val allTransactions = remember {
         (TransactionHistoryStore.paymentHistory.map { TransactionItem(it, "Payment") } +
          TransactionHistoryStore.rechargeHistory.map { TransactionItem(it, "Recharge") })
@@ -36,13 +37,23 @@ fun HistoryScreen(navController: NavController, voiceManager: VoiceManager) {
     }
 
     Scaffold(
-        containerColor = Obsidian,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Transaction History", style = MaterialTheme.typography.titleLarge) },
+                title = { 
+                    Text(
+                        if (isHindi) "लेनदेन का इतिहास" else "Transaction History", 
+                        style = MaterialTheme.typography.titleLarge,
+                        color = MaterialTheme.colorScheme.onBackground
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = TextPrimary)
+                        Icon(
+                            Icons.Default.ArrowBack, 
+                            contentDescription = null, 
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
@@ -50,16 +61,16 @@ fun HistoryScreen(navController: NavController, voiceManager: VoiceManager) {
         }
     ) { paddingValues ->
         if (allTransactions.isEmpty()) {
-            EmptyHistoryState()
+            EmptyHistoryState(isHindi)
         } else {
             LazyColumn(
                 modifier = Modifier.fillMaxSize().padding(paddingValues),
                 contentPadding = PaddingValues(24.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                item { SectionHeader(title = "Recent Activity") }
+                item { SectionHeader(title = if (isHindi) "हाल की गतिविधि" else "Recent Activity") }
                 items(allTransactions) { transaction ->
-                    TransactionRow(transaction)
+                    TransactionRow(transaction, isHindi)
                 }
                 item { Spacer(modifier = Modifier.height(32.dp)) }
                 item {
@@ -67,14 +78,17 @@ fun HistoryScreen(navController: NavController, voiceManager: VoiceManager) {
                         onClick = {
                             TransactionHistoryStore.rechargeHistory.clear()
                             TransactionHistoryStore.paymentHistory.clear()
-                            voiceManager.speak("History cleared")
+                            voiceManager.speak(if (isHindi) "इतिहास मिटा दिया गया" else "History cleared")
                             navController.popBackStack()
                         },
                         modifier = Modifier.fillMaxWidth().height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = CardSurface),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surfaceVariant),
                         shape = RoundedCornerShape(16.dp)
                     ) {
-                        Text("Clear History", color = ErrorRose)
+                        Text(
+                            if (isHindi) "इतिहास साफ़ करें" else "Clear History", 
+                            color = MaterialTheme.colorScheme.error
+                        )
                     }
                 }
             }
@@ -85,30 +99,38 @@ fun HistoryScreen(navController: NavController, voiceManager: VoiceManager) {
 data class TransactionItem(val rawText: String, val type: String)
 
 @Composable
-fun TransactionRow(item: TransactionItem) {
+fun TransactionRow(item: TransactionItem, isHindi: Boolean) {
     PremiumCard {
         Row(verticalAlignment = Alignment.CenterVertically) {
             Box(
-                modifier = Modifier.size(48.dp).clip(CircleShape).background(Obsidian),
+                modifier = Modifier.size(48.dp).clip(CircleShape).background(MaterialTheme.colorScheme.background),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     if (item.type == "Payment") Icons.Default.Payment else Icons.Default.Smartphone,
                     null,
-                    tint = PrimaryIndigo,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(item.rawText.split(" -> ").getOrElse(1) { "Unknown" }, style = MaterialTheme.typography.titleLarge)
-                Text(item.type, style = MaterialTheme.typography.bodyMedium)
+                Text(
+                    item.rawText.split(" -> ").getOrElse(1) { if (isHindi) "अज्ञात" else "Unknown" }, 
+                    style = MaterialTheme.typography.titleLarge,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    if (item.type == "Payment") (if (isHindi) "भुगतान" else "Payment") else (if (isHindi) "रिचार्ज" else "Recharge"), 
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
             }
             Spacer(modifier = Modifier.weight(1f))
             Text(
                 item.rawText.split(" -> ").firstOrNull() ?: "",
                 style = MaterialTheme.typography.titleLarge,
-                color = if (item.type == "Payment") ErrorRose else SecondaryEmerald,
+                color = if (item.type == "Payment") MaterialTheme.colorScheme.error else Color(0xFF2E7D32), // Emerald for success
                 fontWeight = FontWeight.Bold
             )
         }
@@ -116,13 +138,21 @@ fun TransactionRow(item: TransactionItem) {
 }
 
 @Composable
-fun EmptyHistoryState() {
+fun EmptyHistoryState(isHindi: Boolean) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
-        Text("No transactions yet", style = MaterialTheme.typography.headlineMedium, color = TextSecondary)
-        Text("Your activity will appear here", style = MaterialTheme.typography.bodyLarge, color = TextDisabled)
+        Text(
+            if (isHindi) "अभी तक कोई लेनदेन नहीं" else "No transactions yet", 
+            style = MaterialTheme.typography.headlineMedium, 
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        Text(
+            if (isHindi) "आपकी गतिविधि यहां दिखाई देगी" else "Your activity will appear here", 
+            style = MaterialTheme.typography.bodyLarge, 
+            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
+        )
     }
 }

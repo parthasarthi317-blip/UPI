@@ -66,23 +66,28 @@ fun PaymentScreen(
         }
     }
 
+    val isHindi = voiceManager.isHindi()
+
     Scaffold(
-        containerColor = Obsidian,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Confirm Payment", style = MaterialTheme.typography.titleLarge) },
+                title = { Text(if (isHindi) "भुगतान की पुष्टि करें" else "Confirm Payment", style = MaterialTheme.typography.titleLarge) },
                 navigationIcon = {
                     IconButton(onClick = { navController.popBackStack() }) {
-                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = TextPrimary)
+                        Icon(Icons.Default.ArrowBack, contentDescription = null, tint = MaterialTheme.colorScheme.onBackground)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent,
+                    titleContentColor = MaterialTheme.colorScheme.onBackground
+                )
             )
         }
     ) { paddingValues ->
         Box(modifier = Modifier.fillMaxSize().padding(paddingValues)) {
             if (paymentSuccess) {
-                PaymentSuccessState(editableAmount.toIntOrNull() ?: 0, receiver) {
+                PaymentSuccessState(editableAmount.toIntOrNull() ?: 0, receiver, isHindi) {
                     navController.navigate(Routes.HOME) { popUpTo(0) }
                 }
             } else {
@@ -91,6 +96,7 @@ fun PaymentScreen(
                     onAmountChange = { editableAmount = it },
                     receiver = receiver,
                     paymentMessage = paymentMessage,
+                    isHindi = isHindi,
                     onConfirm = {
                         voiceManager.triggerSensitiveCommand(VoiceCommand.ConfirmPayment)
                     }
@@ -101,7 +107,7 @@ fun PaymentScreen(
 }
 
 @Composable
-fun PaymentSuccessState(amount: Int, receiver: String, onHomeClick: () -> Unit) {
+fun PaymentSuccessState(amount: Int, receiver: String, isHindi: Boolean, onHomeClick: () -> Unit) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -115,24 +121,24 @@ fun PaymentSuccessState(amount: Int, receiver: String, onHomeClick: () -> Unit) 
         )
         Spacer(modifier = Modifier.height(32.dp))
         Text(
-            text = "Payment Successful",
+            text = if (isHindi) "भुगतान सफल रहा" else "Payment Successful",
             style = MaterialTheme.typography.headlineMedium,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(8.dp))
         Text(
-            text = "₹$amount sent to $receiver",
+            text = if (isHindi) "₹$amount $receiver को भेज दिया गया" else "₹$amount sent to $receiver",
             style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onBackground.copy(alpha = 0.6f)
         )
         Spacer(modifier = Modifier.height(48.dp))
         Button(
             onClick = onHomeClick,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(containerColor = PrimaryIndigo)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
         ) {
-            Text("Back To Home", fontWeight = FontWeight.Bold)
+            Text(if (isHindi) "वापस होम पर" else "Back To Home", fontWeight = FontWeight.Bold)
         }
     }
 }
@@ -143,38 +149,39 @@ fun PaymentConfirmationState(
     onAmountChange: (String) -> Unit,
     receiver: String,
     paymentMessage: String,
+    isHindi: Boolean,
     onConfirm: () -> Unit
 ) {
     Column(
         modifier = Modifier.fillMaxSize().padding(24.dp)
     ) {
-        PremiumCard {
+        PremiumCard(containerColor = MaterialTheme.colorScheme.surface) {
             Text(
-                text = "PAYING TO",
+                text = if (isHindi) "भुगतान किया जा रहा है" else "PAYING TO",
                 style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Text(
                 text = receiver,
                 style = MaterialTheme.typography.headlineMedium,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             
             Spacer(modifier = Modifier.height(24.dp))
-            Divider(color = Color.White.copy(alpha = 0.1f))
+            Divider(color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = "AMOUNT",
+                text = if (isHindi) "राशि" else "AMOUNT",
                 style = MaterialTheme.typography.labelSmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             
             OutlinedTextField(
                 value = amount,
                 onValueChange = onAmountChange,
                 textStyle = MaterialTheme.typography.headlineLarge.copy(
-                    color = PrimaryIndigo,
+                    color = MaterialTheme.colorScheme.primary,
                     fontWeight = FontWeight.ExtraBold
                 ),
                 modifier = Modifier.fillMaxWidth(),
@@ -182,7 +189,7 @@ fun PaymentConfirmationState(
                     Text(
                         "₹", 
                         style = MaterialTheme.typography.headlineLarge.copy(
-                            color = PrimaryIndigo,
+                            color = MaterialTheme.colorScheme.primary,
                             fontWeight = FontWeight.ExtraBold
                         )
                     ) 
@@ -190,9 +197,9 @@ fun PaymentConfirmationState(
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = Color.Transparent,
                     unfocusedBorderColor = Color.Transparent,
-                    cursorColor = PrimaryIndigo,
-                    focusedTextColor = PrimaryIndigo,
-                    unfocusedTextColor = PrimaryIndigo
+                    cursorColor = MaterialTheme.colorScheme.primary,
+                    focusedTextColor = MaterialTheme.colorScheme.primary,
+                    unfocusedTextColor = MaterialTheme.colorScheme.primary
                 ),
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                 singleLine = true
@@ -202,7 +209,7 @@ fun PaymentConfirmationState(
         if (paymentMessage.isNotBlank()) {
             Spacer(modifier = Modifier.height(16.dp))
             Text(
-                text = paymentMessage,
+                text = if (isHindi && paymentMessage == "Insufficient Balance") "अपर्याप्त राशि" else paymentMessage,
                 color = ErrorRose,
                 style = MaterialTheme.typography.bodyMedium,
                 modifier = Modifier.align(Alignment.CenterHorizontally)
@@ -215,9 +222,9 @@ fun PaymentConfirmationState(
             onClick = onConfirm,
             modifier = Modifier.fillMaxWidth().height(56.dp),
             shape = CircleShape,
-            colors = ButtonDefaults.buttonColors(containerColor = SecondaryEmerald)
+            colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.secondary)
         ) {
-            Text("Confirm Payment", fontWeight = FontWeight.Bold)
+            Text(if (isHindi) "भुगतान की पुष्टि करें" else "Confirm Payment", fontWeight = FontWeight.Bold)
         }
         Spacer(modifier = Modifier.height(16.dp))
     }
