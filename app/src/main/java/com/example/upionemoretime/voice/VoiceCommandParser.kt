@@ -12,9 +12,51 @@ object VoiceCommandParser {
     fun parse(text: String, currentState: VoiceState = VoiceState.IDLE): VoiceCommand {
         val command = text.lowercase().trim()
 
-        // Handle direct Yes/No for flow control
-        if (command in listOf("yes", "correct", "yeah", "yep", "हाँ", "हा", "सही है")) return VoiceCommand.Yes
-        if (command in listOf("no", "incorrect", "nope", "नहीं", "गलत है")) return VoiceCommand.No
+        // Handle direct Yes/No for flow control - Expanded for better recognition
+        val yesKeywords = listOf(
+            "yes", "correct", "yeah", "yep", "confirm", "sure", "ok", "okay", "yup", "do it",
+            "हाँ", "हा", "सही है", "जी हाँ", "जी हा", "कर दो", "लिंक करो", "ठीक है", "बिल्कुल", "सहमति"
+        )
+        val noKeywords = listOf(
+            "no", "incorrect", "nope", "cancel", "stop", "dont", "don't", "nah",
+            "नहीं", "ना", "गलत है", "मत करो", "नहीं चाहिए", "नही", "मना", "कैंसिल", "रद्द"
+        )
+
+        if (command in yesKeywords || yesKeywords.any { it in command && command.length < it.length + 5 }) return VoiceCommand.Yes
+        if (command in noKeywords || noKeywords.any { it in command && command.length < it.length + 5 }) return VoiceCommand.No
+
+        // State-specific bank selection
+        if (currentState == VoiceState.LINK_BANK_SELECTION) {
+            val banks = mapOf(
+                "state bank" to "State Bank of India",
+                "sbi" to "State Bank of India",
+                "एसबीआई" to "State Bank of India",
+                "hdfc" to "HDFC Bank",
+                "एचडीएफसी" to "HDFC Bank",
+                "icici" to "ICICI Bank",
+                "आईसीआईसीआई" to "ICICI Bank",
+                "punjab national" to "Punjab National Bank",
+                "pnb" to "Punjab National Bank",
+                "पीएनबी" to "Punjab National Bank",
+                "axis" to "Axis Bank",
+                "एक्सिस" to "Axis Bank",
+                "bank of baroda" to "Bank of Baroda",
+                "bob" to "Bank of Baroda",
+                "बीओबी" to "Bank of Baroda",
+                "canara" to "Canara Bank",
+                "केनरा" to "Canara Bank",
+                "union bank" to "Union Bank",
+                "यूनियन बैंक" to "Union Bank",
+                "kotak" to "Kotak Mahindra Bank",
+                "कोटक" to "Kotak Mahindra Bank",
+                "indusind" to "IndusInd Bank",
+                "इंडसइंड" to "IndusInd Bank"
+            )
+            
+            for ((key, value) in banks) {
+                if (key in command) return VoiceCommand.LinkBank(value)
+            }
+        }
 
         // If we are in a data-entry state, we might want to return the raw or processed text as DataInput
         if (isDataEntryState(currentState)) {
@@ -57,6 +99,23 @@ object VoiceCommandParser {
         
         if ("scan qr" in command || "scanner" in command || "स्कैन" in command) return VoiceCommand.ScanQR
         if ("reset voice" in command || "आवाज रीसेट" in command) return VoiceCommand.ResetVoice
+        
+        if ("add another account" in command || "add account" in command || "another bank" in command || "दूसra खाता" in command || "खाता जोड़ें" in command || "अन्य बैंक" in command) return VoiceCommand.OpenLinkBank
+        if ("unlink account" in command || "remove account" in command || "delete bank" in command || "अनलिंक" in command || "खाता हटाओ" in command || "बैंक हटाओ" in command) return VoiceCommand.UnlinkBank
+        
+        if ("link bank" in command || "bank link" in command || "बैंक लिंक" in command) {
+            val banks = listOf(
+                "state bank of india", "hdfc bank", "icici bank", "punjab national bank", 
+                "axis bank", "bank of baroda", "canara bank", "union bank", 
+                "kotak mahindra bank", "indusind bank"
+            )
+            val matchedBank = banks.find { it in command }
+            if (matchedBank != null) {
+                return VoiceCommand.LinkBank(matchedBank.split(" ").joinToString(" ") { it.replaceFirstChar { char -> char.uppercase() } })
+            }
+            return VoiceCommand.OpenLinkBank
+        }
+
         if ("clear history" in command || "इतिहास मिटाएं" in command) return VoiceCommand.ClearHistory
         if ("read history" in command || "इतिहास पढ़ें" in command) return VoiceCommand.ReadHistory
         if ("history" in command || "इतिहास" in command || "लेनदेन" in command) return VoiceCommand.OpenHistory
@@ -88,7 +147,7 @@ object VoiceCommandParser {
             VoiceState.LOGIN_MOBILE, VoiceState.LOGIN_PASSWORD,
             VoiceState.SIGNUP_NAME, VoiceState.SIGNUP_MOBILE, VoiceState.SIGNUP_EMAIL,
             VoiceState.SIGNUP_PASSWORD, VoiceState.SIGNUP_CONFIRM_PASSWORD,
-            VoiceState.OTP_INPUT
+            VoiceState.OTP_INPUT, VoiceState.LINK_BANK_SELECTION
         )
     }
 

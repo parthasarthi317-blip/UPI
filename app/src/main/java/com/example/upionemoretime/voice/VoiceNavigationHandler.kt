@@ -124,6 +124,12 @@ object VoiceNavigationHandler {
                     launchSingleTop = true
                 }
             }
+            VoiceCommand.OpenLinkBank -> {
+                ttsManager?.speak("Opening link bank account screen")
+                navController.navigate(Routes.LINK_BANK) {
+                    launchSingleTop = true
+                }
+            }
             VoiceCommand.ConfirmPayment -> {
                 // Handled via authenticatedCommands flow in PaymentScreen
             }

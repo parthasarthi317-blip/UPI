@@ -33,6 +33,10 @@ enum class VoiceState {
     SIGNUP_CONFIRM_PASSWORD,
     SIGNUP_CONFIRM_FINAL,
 
+    // Link Bank Flow
+    LINK_BANK_SELECTION,
+    LINK_BANK_CONFIRMATION,
+
     // OTP Flow States
     OTP_INPUT,
     OTP_CONFIRM

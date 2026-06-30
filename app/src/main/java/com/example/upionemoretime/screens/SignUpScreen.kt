@@ -46,6 +46,7 @@ fun SignUpScreen(navController: NavController, voiceManager: VoiceManager) {
             onActionTrigger = {
                 if (isFormValid) {
                     voiceManager.setUserName(name)
+                    voiceManager.setUserMobile(mobileNumber)
                     navController.navigate(Routes.otpRoute(mobileNumber, false))
                 }
             }
@@ -128,6 +129,7 @@ fun SignUpScreen(navController: NavController, voiceManager: VoiceManager) {
                 onClick = { 
                     if (isFormValid) {
                         voiceManager.setUserName(name)
+                        voiceManager.setUserMobile(mobileNumber)
                         navController.navigate(Routes.otpRoute(mobileNumber, false))
                     }
                 },

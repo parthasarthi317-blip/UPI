@@ -29,6 +29,7 @@ object Routes {
     const val SETTINGS = "settings"
     const val STATS = "stats"
     const val SCAN_QR = "scan_qr"
+    const val LINK_BANK = "link_bank"
     
     const val LOGIN = "login"
     const val SIGNUP = "signup"

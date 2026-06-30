@@ -39,6 +39,9 @@ sealed class VoiceCommand {
     data object OpenStatistics : VoiceCommand()
     data object ScanQR : VoiceCommand()
     data object ResetVoice : VoiceCommand()
+    data object OpenLinkBank : VoiceCommand()
+    data object UnlinkBank : VoiceCommand()
+    data class LinkBank(val bankName: String) : VoiceCommand()
 
     // Login & Signup Commands
     data object Yes : VoiceCommand()

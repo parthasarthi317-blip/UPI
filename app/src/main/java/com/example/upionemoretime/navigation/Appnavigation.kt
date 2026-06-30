@@ -17,6 +17,7 @@ import com.example.upionemoretime.screens.LoginScreen
 import com.example.upionemoretime.screens.SignUpScreen
 import com.example.upionemoretime.screens.OtpVerificationScreen
 import com.example.upionemoretime.screens.VoiceEnrollmentScreen
+import com.example.upionemoretime.screens.LinkBankScreen
 import com.example.upionemoretime.voice.VoiceManager
 
 @Composable
@@ -136,6 +137,10 @@ fun AppNavigation(
         }
         composable(Routes.SCAN_QR) {
             ScanQRScreen(navController, voiceManager)
+        }
+
+        composable(Routes.LINK_BANK) {
+            LinkBankScreen(navController, voiceManager)
         }
     }
 }

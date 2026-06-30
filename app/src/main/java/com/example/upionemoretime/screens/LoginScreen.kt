@@ -32,6 +32,7 @@ fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
             onPasswordUpdate = { password = it },
             onActionTrigger = {
                 if (mobileNumber.length == 10) {
+                    voiceManager.setUserMobile(mobileNumber)
                     navController.navigate(Routes.otpRoute(mobileNumber, true))
                 }
             }
@@ -114,6 +115,7 @@ fun LoginScreen(navController: NavController, voiceManager: VoiceManager) {
             Button(
                 onClick = { 
                     if (mobileNumber.length == 10) {
+                        voiceManager.setUserMobile(mobileNumber)
                         navController.navigate(Routes.otpRoute(mobileNumber, true))
                     }
                 },

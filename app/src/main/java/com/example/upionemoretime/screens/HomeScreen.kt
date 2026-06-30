@@ -246,7 +246,14 @@ paddingValues ->
                     contentColor = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(modifier = Modifier.width(16.dp))
-                Box(modifier = Modifier.weight(1f))
+                QuickActionChip(
+                    title = if (voiceManager.isHindi()) "बैंक लिंक" else "Link Bank",
+                    icon = Icons.Default.AddCard,
+                    onClick = { navController.navigate(Routes.LINK_BANK) },
+                    modifier = Modifier.weight(1f),
+                    containerColor = MaterialTheme.colorScheme.surface,
+                    contentColor = MaterialTheme.colorScheme.onSurface
+                )
             }
 
             Spacer(modifier = Modifier.height(32.dp))

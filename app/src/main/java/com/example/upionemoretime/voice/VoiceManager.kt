@@ -55,11 +55,14 @@ class VoiceManager(
 
     private var pendingCommand: VoiceCommand? = null
     private var verificationChallenge: String = ""
+    private var nextStateAfterSpeech: VoiceState? = null
 
     private var _userName = "User"
     private var isHindi = false
     private var isDarkMode = true
+    private var _mobileNumber = ""
     private val prefs = context.getSharedPreferences("voice_prefs", Context.MODE_PRIVATE)
+    private val bankPrefs = context.getSharedPreferences("bank_prefs", Context.MODE_PRIVATE)
 
     // UI Listeners
     private var onLoginMobileUpdate: ((String) -> Unit)? = null
@@ -76,9 +79,15 @@ class VoiceManager(
     private var onOtpUpdate: ((String) -> Unit)? = null
     private var onOtpAction: (() -> Unit)? = null
 
+    private var onBankSelected: ((String) -> Unit)? = null
+    private var onBankLinkConfirmed: (() -> Unit)? = null
+    private var onAddAnotherAccount: (() -> Unit)? = null
+    private var onUnlinkAccount: (() -> Unit)? = null
+
     init {
         Log.d("VOICE_MANAGER", "VoiceManager Created: ${hashCode()}")
         _userName = prefs.getString("user_name", "User") ?: "User"
+        _mobileNumber = prefs.getString("user_mobile", "") ?: ""
         val lang = prefs.getString("language", "en") ?: "en"
         isHindi = lang == "hi"
         isDarkMode = prefs.getBoolean("dark_mode", true)
@@ -92,7 +101,15 @@ class VoiceManager(
     }
 
     private fun handleSpeechDone() {
-        Log.d("VOICE_DEBUG", "TTS Finished. State: $currentState")
+        Log.d("VOICE_DEBUG", "TTS Finished. State: $currentState, Next: $nextStateAfterSpeech")
+        
+        val next = nextStateAfterSpeech
+        if (next != null) {
+            nextStateAfterSpeech = null
+            transitionTo(next)
+            return
+        }
+
         when (currentState) {
             VoiceState.PROMPTING, VoiceState.RESPONDING, VoiceState.PROMPTING_SILENT -> {
                 transitionTo(VoiceState.LISTENING)
@@ -117,7 +134,7 @@ class VoiceManager(
             VoiceState.SIGNUP_NAME, VoiceState.SIGNUP_NAME_CONFIRM, VoiceState.SIGNUP_MOBILE,
             VoiceState.SIGNUP_EMAIL, VoiceState.SIGNUP_PASSWORD, VoiceState.SIGNUP_CONFIRM_PASSWORD,
             VoiceState.SIGNUP_CONFIRM_FINAL, VoiceState.OTP_INPUT, VoiceState.OTP_CONFIRM,
-            VoiceState.ONBOARDING_CHECK -> {
+            VoiceState.ONBOARDING_CHECK, VoiceState.LINK_BANK_SELECTION, VoiceState.LINK_BANK_CONFIRMATION -> {
                 transitionTo(currentState) // Stay in flow
             }
             else -> {
@@ -146,7 +163,7 @@ class VoiceManager(
             VoiceState.SIGNUP_NAME, VoiceState.SIGNUP_NAME_CONFIRM, VoiceState.SIGNUP_MOBILE,
             VoiceState.SIGNUP_EMAIL, VoiceState.SIGNUP_PASSWORD, VoiceState.SIGNUP_CONFIRM_PASSWORD,
             VoiceState.SIGNUP_CONFIRM_FINAL, VoiceState.OTP_INPUT, VoiceState.OTP_CONFIRM,
-            VoiceState.ONBOARDING_CHECK -> {
+            VoiceState.ONBOARDING_CHECK, VoiceState.LINK_BANK_SELECTION, VoiceState.LINK_BANK_CONFIRMATION -> {
                 wakeWordManager.stopListening()
                 mainHandler.postDelayed({
                     startListeningForCommand()
@@ -194,6 +211,21 @@ class VoiceManager(
             route?.startsWith("otp_verification") == true -> {
                 transitionTo(VoiceState.OTP_INPUT)
                 ttsManager.speak("Please tell me the 6 digit O T P you received.")
+            }
+            route == Routes.LINK_BANK -> {
+                val linkedBank = bankPrefs.getString("linked_bank", null)
+                if (linkedBank == null) {
+                    transitionTo(VoiceState.LINK_BANK_SELECTION)
+                    val mobile = getUserMobile()
+                    val last4 = if (mobile.length >= 4) mobile.takeLast(4) else "XXXX"
+                    ttsManager.speak(
+                        if (isHindi) "मुझे आपका पंजीकृत मोबाइल नंबर मिला है जिसके अंत में $last4 है। अब कृपया वह बैंक चुनें जिसे आप लिंक करना चाहते हैं।"
+                        else "I found your registered mobile number ending with $last4. Now please choose the bank you want to link."
+                    )
+                } else {
+                    transitionTo(VoiceState.PROMPTING)
+                    ttsManager.speak(if (isHindi) "मैं आपकी क्या मदद कर सकता हूँ?" else "How can I help you?")
+                }
             }
             else -> {
                 transitionTo(VoiceState.PROMPTING)
@@ -322,6 +354,30 @@ class VoiceManager(
                 }
                 else -> ttsManager.speak("Please say yes or no.")
             }
+            VoiceState.LINK_BANK_SELECTION -> when (command) {
+                is VoiceCommand.LinkBank -> {
+                    onBankSelected?.invoke(command.bankName)
+                    transitionTo(VoiceState.LINK_BANK_CONFIRMATION)
+                    ttsManager.speak("You selected ${command.bankName}. Shall I link this account?")
+                }
+                is VoiceCommand.DataInput -> {
+                    onBankSelected?.invoke(command.text)
+                    transitionTo(VoiceState.LINK_BANK_CONFIRMATION)
+                    ttsManager.speak("You selected ${command.text}. Shall I link this account?")
+                }
+                else -> ttsManager.speak("Please tell me your bank name.")
+            }
+            VoiceState.LINK_BANK_CONFIRMATION -> when (command) {
+                VoiceCommand.Yes -> {
+                    onBankLinkConfirmed?.invoke()
+                    transitionTo(VoiceState.WAKING)
+                }
+                VoiceCommand.No -> {
+                    transitionTo(VoiceState.LINK_BANK_SELECTION)
+                    ttsManager.speak("Okay, which bank would you like to link?")
+                }
+                else -> ttsManager.speak("Please say yes or no.")
+            }
             else -> handleGlobalCommand(command, nav)
         }
     }
@@ -329,6 +385,25 @@ class VoiceManager(
     private fun handleGlobalCommand(command: VoiceCommand, nav: NavController) {
         if (command == VoiceCommand.Unknown) {
             handleUnknownCommand("UNKNOWN")
+            return
+        }
+
+        if (command == VoiceCommand.OpenLinkBank && nav.currentBackStackEntry?.destination?.route == Routes.LINK_BANK) {
+            onAddAnotherAccount?.invoke()
+            transitionTo(VoiceState.LINK_BANK_SELECTION)
+            val mobile = getUserMobile()
+            val last4 = if (mobile.length >= 4) mobile.takeLast(4) else "XXXX"
+            ttsManager.speak(
+                if (isHindi) "जरूर, मुझे आपका पंजीकृत मोबाइल नंबर $last4 मिला है। कृपया उस बैंक का नाम बताएं जिसे आप जोड़ना चाहते हैं।" 
+                else "Sure, I found your registered mobile number ending with $last4. Please tell me the name of the bank you want to add."
+            )
+            return
+        }
+
+        if (command == VoiceCommand.UnlinkBank && nav.currentBackStackEntry?.destination?.route == Routes.LINK_BANK) {
+            onUnlinkAccount?.invoke()
+            transitionTo(VoiceState.RESPONDING)
+            ttsManager.speak(if (isHindi) "आपका बैंक खाता सफलतापूर्वक हटा दिया गया है।" else "Your bank account has been unlinked successfully.")
             return
         }
 
@@ -487,6 +562,18 @@ class VoiceManager(
         this.onOtpAction = onActionTrigger
     }
 
+    fun setLinkBankListeners(
+        onBankSelected: (String) -> Unit,
+        onConfirm: () -> Unit,
+        onAddAnother: (() -> Unit)? = null,
+        onUnlink: (() -> Unit)? = null
+    ) {
+        this.onBankSelected = onBankSelected
+        this.onBankLinkConfirmed = onConfirm
+        this.onAddAnotherAccount = onAddAnother
+        this.onUnlinkAccount = onUnlink
+    }
+
     fun updateNavController(navController: NavController) { this.currentNavController = navController }
     fun startWakeWordDetection() { if (currentState == VoiceState.IDLE || currentState == VoiceState.WAKING) transitionTo(VoiceState.WAKING) }
     fun listenAndHandle(navController: NavController) { this.currentNavController = navController; transitionTo(VoiceState.PROMPTING); ttsManager.speak("Listening") }
@@ -505,13 +592,29 @@ class VoiceManager(
         }
     }
 
-    fun speak(text: String, startListeningAfter: Boolean = false) { if (startListeningAfter) transitionTo(VoiceState.PROMPTING_SILENT); ttsManager.speak(text) }
+    fun speak(text: String, startListeningAfter: Boolean = false, nextState: VoiceState? = null) {
+        if (startListeningAfter) {
+            nextStateAfterSpeech = nextState ?: VoiceState.LISTENING
+            // We transition to RESPONDING/PROMPTING while speaking so we don't trigger wake word or double listen
+            transitionTo(VoiceState.PROMPTING_SILENT)
+        } else {
+            nextStateAfterSpeech = null
+        }
+        ttsManager.speak(text)
+    }
     fun resetVoiceData() { biometricManager.clearEnrollment(); ttsManager.speak("Voice data has been reset.") }
 
     fun setUserName(name: String) {
         _userName = name
         prefs.edit().putString("user_name", name).apply()
     }
+
+    fun setUserMobile(mobile: String) {
+        _mobileNumber = mobile
+        prefs.edit().putString("user_mobile", mobile).apply()
+    }
+
+    fun getUserMobile(): String = _mobileNumber
 
     fun getUserName(): String = _userName
 
